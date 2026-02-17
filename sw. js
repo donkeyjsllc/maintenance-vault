@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sustain-vault-v1';
+const CACHE_NAME = 'sustain-vault-v3';
 const urlsToCache = [
   './index.html',
   './manifest.json',
@@ -8,6 +8,7 @@ const urlsToCache = [
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
 
+// 1. Install & Cache Assets
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -15,9 +16,32 @@ self.addEventListener('install', event => {
   );
 });
 
+// 2. Serve from Cache (Offline Mode)
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
       .then(response => response || fetch(event.request))
   );
+});
+
+// 3. Handle Notification Clicks (Open App)
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+
+  if (event.action === 'view' || !event.action) {
+    event.waitUntil(
+      clients.matchAll({ type: 'window' }).then(clientList => {
+        // If app is already open, focus it
+        for (const client of clientList) {
+          if (client.url.includes('index.html') && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // If not open, open it
+        if (clients.openWindow) {
+          return clients.openWindow('./index.html');
+        }
+      })
+    );
+  }
 });
