@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sustainability Vault</title>
+    <title>SustainVault</title>
     
     <link rel="manifest" href="manifest.json">
 
@@ -22,17 +22,22 @@
 
 <body class="bg-gray-900 text-gray-200 font-sans min-h-screen pb-24">
 
-    <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+    <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 shadow-md">
         <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
             <div>
-                <h1 class="text-xl font-bold text-white tracking-tight">
+                <h1 class="text-xl font-bold text-white tracking-tight flex items-center">
                     <i class="fas fa-leaf text-green-500 mr-2"></i>SustainVault
                 </h1>
                 <p class="text-[10px] text-gray-500 font-mono uppercase">Silverado • 5-Acre • Equipment</p>
             </div>
-            <div class="text-right">
-                <div class="text-[10px] text-gray-400 uppercase">CO2 Avoided</div>
-                <div id="co2-stat" class="text-lg font-bold text-green-400">0 kg</div>
+            
+            <div class="flex flex-col items-end">
+                <div class="text-[10px] text-gray-400 uppercase mb-1">CO2 Avoided: <span id="co2-stat" class="text-green-400 font-bold">0 kg</span></div>
+                <label class="inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="notify-toggle" class="sr-only peer" onchange="toggleNotifications()">
+                    <div class="relative w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    <span class="ms-2 text-[9px] font-bold text-gray-500 uppercase">Alerts</span>
+                </label>
             </div>
         </div>
         
@@ -51,7 +56,7 @@
 
     <main class="max-w-4xl mx-auto p-4">
 
-        <div id="input-form" class="hidden bg-gray-800 rounded-xl p-5 mb-6 border border-gray-700 shadow-xl">
+        <div id="input-form" class="hidden bg-gray-800 rounded-xl p-5 mb-6 border border-gray-700 shadow-xl animate-fade-in">
             <h2 class="text-white font-bold mb-4 flex items-center">
                 <i class="fas fa-plus-circle text-blue-500 mr-2"></i> Log Maintenance
             </h2>
@@ -59,7 +64,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs text-gray-500 uppercase mb-1">Item Name</label>
-                    <input type="text" id="itemName" placeholder="e.g. Oil Change 0W-20" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none">
+                    <input type="text" id="itemName" placeholder="e.g. Oil Change 0W-20" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none transition-colors">
                 </div>
                 
                 <div>
@@ -85,7 +90,7 @@
                         </label>
                         <label class="flex items-center gap-1 cursor-pointer">
                             <input type="radio" name="actionType" value="repair" class="accent-green-500">
-                            <span class="text-sm text-green-400">Repair (Save CO2)</span>
+                            <span class="text-sm text-green-400">Repair</span>
                         </label>
                     </div>
                 </div>
@@ -96,58 +101,66 @@
                 <textarea id="itemNotes" rows="2" placeholder="e.g. Torque drain plug to 18 ft-lbs" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-gray-300 text-sm outline-none"></textarea>
             </div>
 
-            <button onclick="addItem()" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-lg">SAVE LOG</button>
+            <button onclick="addItem()" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95">SAVE LOG</button>
         </div>
 
         <div id="vault-list" class="grid gap-4">
             </div>
 
-        <div id="dashboard-view" class="hidden">
+        <div id="dashboard-view" class="hidden animate-fade-in">
             <div class="grid grid-cols-2 gap-4 mb-6">
                 <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 text-center">
-                    <div class="text-2xl font-bold text-green-400" id="dash-repaired">0</div>
-                    <div class="text-xs text-gray-500 uppercase">Items Repaired</div>
+                    <div class="text-3xl font-bold text-green-400" id="dash-repaired">0</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wider">Items Repaired</div>
                 </div>
                 <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 text-center">
-                    <div class="text-2xl font-bold text-blue-400" id="dash-replaced">0</div>
-                    <div class="text-xs text-gray-500 uppercase">Items Replaced</div>
+                    <div class="text-3xl font-bold text-blue-400" id="dash-replaced">0</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wider">Items Replaced</div>
                 </div>
             </div>
 
-            <div class="bg-gray-800 p-5 rounded-xl border border-gray-700">
-                <h3 class="font-bold text-white mb-2"><i class="fas fa-leaf text-green-500 mr-2"></i>Impact Calculator</h3>
-                <p class="text-sm text-gray-400 mb-4">
+            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
+                <h3 class="font-bold text-white mb-2 flex items-center"><i class="fas fa-recycle text-green-500 mr-2"></i>Impact Calculator</h3>
+                <p class="text-sm text-gray-400 mb-6 leading-relaxed">
                     Based on "Repair vs Replace" logic. Repairing avoids ~88% of new production emissions.
                 </p>
-                <div class="w-full bg-gray-700 rounded-full h-4 mb-2">
-                    <div id="impact-bar" class="bg-green-500 h-4 rounded-full" style="width: 0%"></div>
+                
+                <div class="w-full bg-gray-700 rounded-full h-6 mb-2 overflow-hidden">
+                    <div id="impact-bar" class="bg-gradient-to-r from-green-600 to-green-400 h-6 rounded-full transition-all duration-1000" style="width: 0%"></div>
                 </div>
-                <div class="text-right text-xs text-green-400 font-mono" id="impact-percent">0% Circular Economy Score</div>
+                <div class="text-right text-xs text-green-400 font-mono font-bold uppercase tracking-wide" id="impact-percent">0% Circular Economy Score</div>
             </div>
         </div>
 
     </main>
 
-    <button onclick="toggleForm()" class="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-full shadow-2xl z-50">
+    <button onclick="toggleForm()" class="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-500 text-white w-14 h-14 rounded-full shadow-2xl z-50 flex items-center justify-center transition-transform active:scale-90">
         <i class="fas fa-plus text-xl"></i>
     </button>
 
     <script>
-        // --- DATA LOGIC ---
+        // --- DATA & STATE ---
         let vaultData = JSON.parse(localStorage.getItem('sustainVault')) || [];
         let currentTab = 'vehicle';
 
-        // Initial Load
+        // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             renderVault();
             updateStats();
             
-            // Register Service Worker for Offline Mode
+            // Check Notification Toggle State
+            const isEnabled = localStorage.getItem('notificationsEnabled') === 'true';
+            document.getElementById('notify-toggle').checked = isEnabled;
+            if (isEnabled) checkForDueMaintenance();
+
+            // Register Service Worker for Offline Mode & Alerts
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('sw.js')
-                .then(() => console.log('Offline Mode Ready'));
+                .then(() => console.log('Service Worker Registered'));
             }
         });
+
+        // --- CORE FUNCTIONS ---
 
         // 1. Add Item
         function addItem() {
@@ -161,7 +174,7 @@
                 part: document.getElementById('itemPart').value,
                 type: document.querySelector('input[name="actionType"]:checked').value,
                 notes: document.getElementById('itemNotes').value,
-                date: new Date().toLocaleDateString()
+                date: new Date().toISOString() // Save standard ISO date
             };
 
             vaultData.unshift(newItem); // Add to top
@@ -171,7 +184,7 @@
             renderVault();
             updateStats();
             
-            // Clear fields
+            // Reset Fields
             document.getElementById('itemName').value = '';
             document.getElementById('itemPart').value = '';
             document.getElementById('itemNotes').value = '';
@@ -185,38 +198,41 @@
             const filtered = vaultData.filter(item => {
                 if(currentTab === 'vehicle') return item.category === 'Vehicle';
                 if(currentTab === 'property') return item.category !== 'Vehicle';
-                return false; // Dashboard handles itself
+                return false;
             });
 
             if(filtered.length === 0 && currentTab !== 'dashboard') {
-                list.innerHTML = `<div class="text-center text-gray-600 mt-10 italic">No logs found for ${currentTab}.</div>`;
+                list.innerHTML = `<div class="text-center text-gray-600 mt-10 italic flex flex-col items-center"><i class="fas fa-clipboard-list text-4xl mb-4 opacity-20"></i>No logs found.</div>`;
                 return;
             }
 
             filtered.forEach(item => {
                 const isRepair = item.type === 'repair';
-                const badgeColor = isRepair ? 'bg-green-900 text-green-300' : 'bg-blue-900 text-blue-300';
+                const badgeColor = isRepair ? 'bg-green-900 text-green-300 border-green-800' : 'bg-blue-900 text-blue-300 border-blue-800';
                 const icon = item.category === 'Vehicle' ? 'fa-car' : 'fa-tools';
+                const displayDate = new Date(item.date).toLocaleDateString();
 
                 list.innerHTML += `
-                    <div class="bg-gray-800 rounded-lg p-4 border border-gray-700 shadow-sm relative group">
-                        <button onclick="deleteItem(${item.id})" class="absolute top-3 right-3 text-gray-600 hover:text-red-500">
+                    <div class="bg-gray-800 rounded-lg p-4 border border-gray-700 shadow-sm relative group hover:border-blue-500 transition-colors">
+                        <button onclick="deleteItem(${item.id})" class="absolute top-3 right-3 text-gray-600 hover:text-red-500 p-2">
                             <i class="fas fa-trash"></i>
                         </button>
                         <div class="flex items-start gap-4">
-                            <div class="mt-1 text-2xl text-gray-500"><i class="fas ${icon}"></i></div>
-                            <div>
-                                <h3 class="font-bold text-white text-lg">${item.name}</h3>
-                                <div class="flex flex-wrap gap-2 my-1">
-                                    <span class="text-xs font-bold px-2 py-0.5 rounded ${badgeColor} uppercase tracking-wide border border-gray-700">
+                            <div class="mt-1 text-2xl text-gray-500 bg-gray-900 p-3 rounded-full h-12 w-12 flex items-center justify-center border border-gray-700"><i class="fas ${icon}"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-bold text-white text-lg leading-tight">${item.name}</h3>
+                                <div class="flex flex-wrap gap-2 my-2">
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide border ${badgeColor}">
                                         ${item.type}
                                     </span>
-                                    <span class="text-xs font-mono text-yellow-500 bg-gray-900 px-2 py-0.5 rounded border border-gray-700">
-                                        ${item.part || 'N/A'}
+                                    <span class="text-[10px] font-mono text-yellow-500 bg-gray-900 px-2 py-0.5 rounded border border-gray-700 truncate max-w-[150px]">
+                                        ${item.part || 'No Part #'}
                                     </span>
                                 </div>
-                                <p class="text-sm text-gray-400 mt-1"><i class="fas fa-sticky-note mr-1 opacity-50"></i> ${item.notes}</p>
-                                <p class="text-[10px] text-gray-600 mt-2 uppercase font-mono">${item.date}</p>
+                                <p class="text-sm text-gray-400 mt-1 border-l-2 border-gray-600 pl-2 italic">"${item.notes}"</p>
+                                <p class="text-[10px] text-gray-600 mt-2 uppercase font-mono flex items-center">
+                                    <i class="far fa-clock mr-1"></i> ${displayDate}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -226,7 +242,7 @@
 
         // 3. Delete Item
         function deleteItem(id) {
-            if(confirm("Delete this log?")) {
+            if(confirm("Delete this log permanently?")) {
                 vaultData = vaultData.filter(item => item.id !== id);
                 localStorage.setItem('sustainVault', JSON.stringify(vaultData));
                 renderVault();
@@ -234,37 +250,87 @@
             }
         }
 
-        // 4. Update Stats & CO2 Logic
+        // 4. Update Stats (Green Math)
         function updateStats() {
             const repaired = vaultData.filter(i => i.type === 'repair').length;
             const replaced = vaultData.filter(i => i.type === 'replace').length;
             const total = repaired + replaced;
 
-            // Simple "Green Math": Repairs save roughly 10kg CO2 avg vs manufacturing new parts
+            // Logic: Repairs save ~10kg CO2 vs manufacturing new
             const co2Saved = repaired * 10; 
 
             document.getElementById('co2-stat').innerText = `${co2Saved} kg`;
             document.getElementById('dash-repaired').innerText = repaired;
             document.getElementById('dash-replaced').innerText = replaced;
 
-            // Circular Economy Score
             const score = total === 0 ? 0 : Math.round((repaired / total) * 100);
             document.getElementById('impact-bar').style.width = `${score}%`;
             document.getElementById('impact-percent').innerText = `${score}% Sustainability Score`;
         }
 
-        // 5. Tab Switching
+        // --- ALERTS & NOTIFICATIONS ---
+
+        function toggleNotifications() {
+            const toggle = document.getElementById('notify-toggle');
+            if (toggle.checked) {
+                if (!("Notification" in window)) {
+                    alert("This browser does not support notifications.");
+                    toggle.checked = false;
+                    return;
+                }
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        checkForDueMaintenance(); 
+                        localStorage.setItem('notificationsEnabled', 'true');
+                    } else {
+                        toggle.checked = false;
+                        localStorage.setItem('notificationsEnabled', 'false');
+                    }
+                });
+            } else {
+                localStorage.setItem('notificationsEnabled', 'false');
+            }
+        }
+
+        function checkForDueMaintenance() {
+            if (Notification.permission !== "granted") return;
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+            vaultData.forEach(item => {
+                const itemDate = new Date(item.date);
+                // Trigger if older than 6 months
+                if (itemDate < sixMonthsAgo) {
+                    sendLocalNotification(item);
+                }
+            });
+        }
+
+        function sendLocalNotification(item) {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.showNotification('Maintenance Due', {
+                        body: `Your ${item.name} (${item.part}) was last serviced over 6 months ago.`,
+                        icon: 'icon-192.png',
+                        badge: 'icon-192.png',
+                        tag: `maint-${item.id}`,
+                        actions: [{ action: 'view', title: 'View Details' }],
+                        data: { itemId: item.id }
+                    });
+                });
+            }
+        }
+
+        // --- UI UTILITIES ---
+
         function switchTab(tab) {
             currentTab = tab;
-            
-            // UI Updates
             document.querySelectorAll('header button').forEach(b => {
                 b.classList.remove('tab-active', 'text-blue-400');
                 b.classList.add('hover:text-gray-300');
             });
             document.getElementById(`tab-${tab}`).classList.add('tab-active', 'text-blue-400');
 
-            // View Updates
             if(tab === 'dashboard') {
                 document.getElementById('vault-list').classList.add('hidden');
                 document.getElementById('dashboard-view').classList.remove('hidden');
@@ -281,7 +347,6 @@
             const form = document.getElementById('input-form');
             form.classList.toggle('hidden');
             if(!form.classList.contains('hidden')) {
-                // Auto-set category based on tab
                 const cat = currentTab === 'vehicle' ? 'Vehicle' : 'Property';
                 document.getElementById('itemCategory').value = cat;
             }
