@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maintenance Vault</title>
+    <title>Sustainability Vault</title>
     
     <link rel="manifest" href="manifest.json">
 
@@ -12,237 +12,280 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* Custom scrollbar for a sleek look */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1a202c; }
-        ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
+        /* Custom "Utility" Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #111827; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #60a5fa; }
     </style>
 </head>
 
-<body class="bg-gray-900 text-gray-100 font-sans min-h-screen p-4 sm:p-6 pb-24">
+<body class="bg-gray-900 text-gray-200 font-sans min-h-screen pb-24">
 
-    <header class="max-w-3xl mx-auto mb-8 flex items-center justify-between border-b border-gray-700 pb-4">
-        <div>
-            <h1 class="text-3xl font-bold text-blue-400 tracking-tight">
-                <i class="fas fa-shield-alt mr-2"></i>MaintVault
-            </h1>
-            <p class="text-gray-500 text-xs mt-1 font-mono uppercase">Home • Auto • Equipment</p>
+    <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold text-white tracking-tight">
+                    <i class="fas fa-leaf text-green-500 mr-2"></i>SustainVault
+                </h1>
+                <p class="text-[10px] text-gray-500 font-mono uppercase">Silverado • 5-Acre • Equipment</p>
+            </div>
+            <div class="text-right">
+                <div class="text-[10px] text-gray-400 uppercase">CO2 Avoided</div>
+                <div id="co2-stat" class="text-lg font-bold text-green-400">0 kg</div>
+            </div>
         </div>
-        <div class="text-right">
-            <div class="text-xs text-gray-500 uppercase font-bold">Total Items</div>
-            <div id="total-count" class="text-2xl font-bold text-white">0</div>
+        
+        <div class="flex max-w-4xl mx-auto px-4 mt-2 gap-6 text-sm font-semibold text-gray-500">
+            <button onclick="switchTab('vehicle')" id="tab-vehicle" class="pb-2 tab-active transition-colors">
+                <i class="fas fa-truck-pickup mr-1"></i> VEHICLE
+            </button>
+            <button onclick="switchTab('property')" id="tab-property" class="pb-2 hover:text-gray-300 transition-colors">
+                <i class="fas fa-home mr-1"></i> PROPERTY
+            </button>
+            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="pb-2 hover:text-gray-300 transition-colors">
+                <i class="fas fa-chart-pie mr-1"></i> IMPACT
+            </button>
         </div>
     </header>
 
-    <div class="max-w-3xl mx-auto bg-gray-800 rounded-xl p-5 shadow-lg border border-gray-700 mb-8">
-        <h2 class="text-lg font-semibold mb-4 text-blue-300 flex items-center">
-            <i class="fas fa-plus-circle mr-2"></i> Add New Item
-        </h2>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <main class="max-w-4xl mx-auto p-4">
+
+        <div id="input-form" class="hidden bg-gray-800 rounded-xl p-5 mb-6 border border-gray-700 shadow-xl">
+            <h2 class="text-white font-bold mb-4 flex items-center">
+                <i class="fas fa-plus-circle text-blue-500 mr-2"></i> Log Maintenance
+            </h2>
             
-            <div>
-                <label class="block text-xs text-gray-400 mb-1 uppercase">Item Name</label>
-                <input type="text" id="itemName" placeholder="e.g., Silverado Oil, AC Filter" 
-                    class="w-full bg-gray-900 border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none text-white placeholder-gray-600">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs text-gray-500 uppercase mb-1">Item Name</label>
+                    <input type="text" id="itemName" placeholder="e.g. Oil Change 0W-20" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-xs text-gray-500 uppercase mb-1">Category</label>
+                    <select id="itemCategory" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none">
+                        <option value="Vehicle">Vehicle (Silverado)</option>
+                        <option value="Property">Property / Home</option>
+                        <option value="Equipment">Equipment / Tools</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-gray-500 uppercase mb-1">Part # / Specs</label>
+                    <input type="text" id="itemPart" placeholder="e.g. PF63 / 8 Quarts" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-yellow-400 font-mono outline-none">
+                </div>
+
+                <div class="flex items-center justify-between bg-gray-900 p-2 rounded border border-gray-600">
+                    <span class="text-xs text-gray-400 uppercase">Action Type</span>
+                    <div class="flex gap-2">
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="radio" name="actionType" value="replace" checked class="accent-blue-500">
+                            <span class="text-sm">Replace</span>
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="radio" name="actionType" value="repair" class="accent-green-500">
+                            <span class="text-sm text-green-400">Repair (Save CO2)</span>
+                        </label>
+                    </div>
+                </div>
             </div>
 
-            <div>
-                <label class="block text-xs text-gray-400 mb-1 uppercase">Category</label>
-                <select id="itemCategory" class="w-full bg-gray-900 border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none text-white">
-                    <option value="Vehicle">🚗 Vehicle (Silverado/Car)</option>
-                    <option value="Home">🏠 House (AC/Plumbing)</option>
-                    <option value="Outdoor">🚜 Outdoor (Mower/Tools)</option>
-                    <option value="Electronics">💻 Electronics</option>
-                </select>
+            <div class="mt-4">
+                <label class="block text-xs text-gray-500 uppercase mb-1">Notes (Torque, Gap, etc.)</label>
+                <textarea id="itemNotes" rows="2" placeholder="e.g. Torque drain plug to 18 ft-lbs" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-gray-300 text-sm outline-none"></textarea>
             </div>
 
-            <div>
-                <label class="block text-xs text-gray-400 mb-1 uppercase">Part # / Size</label>
-                <input type="text" id="itemPart" placeholder="e.g., PF63 or 20x20x1" 
-                    class="w-full bg-gray-900 border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none text-white font-mono text-yellow-400">
+            <button onclick="addItem()" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-lg">SAVE LOG</button>
+        </div>
+
+        <div id="vault-list" class="grid gap-4">
             </div>
 
-            <div>
-                <label class="block text-xs text-gray-400 mb-1 uppercase">Cost ($)</label>
-                <input type="number" id="itemCost" placeholder="0.00" 
-                    class="w-full bg-gray-900 border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none text-white">
+        <div id="dashboard-view" class="hidden">
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 text-center">
+                    <div class="text-2xl font-bold text-green-400" id="dash-repaired">0</div>
+                    <div class="text-xs text-gray-500 uppercase">Items Repaired</div>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 text-center">
+                    <div class="text-2xl font-bold text-blue-400" id="dash-replaced">0</div>
+                    <div class="text-xs text-gray-500 uppercase">Items Replaced</div>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 p-5 rounded-xl border border-gray-700">
+                <h3 class="font-bold text-white mb-2"><i class="fas fa-leaf text-green-500 mr-2"></i>Impact Calculator</h3>
+                <p class="text-sm text-gray-400 mb-4">
+                    Based on "Repair vs Replace" logic. Repairing avoids ~88% of new production emissions.
+                </p>
+                <div class="w-full bg-gray-700 rounded-full h-4 mb-2">
+                    <div id="impact-bar" class="bg-green-500 h-4 rounded-full" style="width: 0%"></div>
+                </div>
+                <div class="text-right text-xs text-green-400 font-mono" id="impact-percent">0% Circular Economy Score</div>
             </div>
         </div>
 
-        <div class="mt-4">
-            <label class="block text-xs text-gray-400 mb-1 uppercase">Notes / Location</label>
-            <input type="text" id="itemNotes" placeholder="e.g., Garage Shelf, Bought at Lowe's" 
-                class="w-full bg-gray-900 border border-gray-600 rounded p-2 focus:border-blue-500 focus:outline-none text-gray-300 text-sm">
-        </div>
+    </main>
 
-        <button onclick="addItem()" class="w-full mt-6 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-md transition-all active:scale-95">
-            SAVE TO VAULT
-        </button>
-    </div>
-
-    <div id="vaultList" class="max-w-3xl mx-auto grid grid-cols-1 gap-4">
-        </div>
-
-    <footer class="max-w-3xl mx-auto mt-12 pt-6 border-t border-gray-700 text-center pb-10">
-        <div class="flex justify-center gap-4 mb-4">
-            <button onclick="exportData()" class="px-4 py-2 bg-green-700 hover:bg-green-600 rounded text-sm font-semibold shadow">
-                <i class="fas fa-file-export mr-1"></i> Export CSV
-            </button>
-            
-            <label class="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded text-sm font-semibold shadow cursor-pointer">
-                <i class="fas fa-file-import mr-1"></i> Import CSV
-                <input type="file" onchange="importData(event)" class="hidden" accept=".csv">
-            </label>
-        </div>
-        <p class="text-gray-600 text-xs italic">
-            ⚠️ Warning: Clearing browser cache will delete data. Please Export regularly.
-        </p>
-    </footer>
+    <button onclick="toggleForm()" class="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-full shadow-2xl z-50">
+        <i class="fas fa-plus text-xl"></i>
+    </button>
 
     <script>
-        // 1. Initialize & Load
-        document.addEventListener('DOMContentLoaded', loadVault);
+        // --- DATA LOGIC ---
+        let vaultData = JSON.parse(localStorage.getItem('sustainVault')) || [];
+        let currentTab = 'vehicle';
 
-        function loadVault() {
-            const data = JSON.parse(localStorage.getItem('maintVaultData')) || [];
-            const list = document.getElementById('vaultList');
-            const countDisplay = document.getElementById('total-count');
+        // Initial Load
+        document.addEventListener('DOMContentLoaded', () => {
+            renderVault();
+            updateStats();
             
-            list.innerHTML = '';
-            countDisplay.innerText = data.length;
+            // Register Service Worker for Offline Mode
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js')
+                .then(() => console.log('Offline Mode Ready'));
+            }
+        });
 
-            if (data.length === 0) {
-                list.innerHTML = `<div class="text-center text-gray-500 py-10 italic">Vault is empty. Add your first item above!</div>`;
+        // 1. Add Item
+        function addItem() {
+            const name = document.getElementById('itemName').value;
+            if(!name) return alert("Item Name is required");
+
+            const newItem = {
+                id: Date.now(),
+                name: name,
+                category: document.getElementById('itemCategory').value,
+                part: document.getElementById('itemPart').value,
+                type: document.querySelector('input[name="actionType"]:checked').value,
+                notes: document.getElementById('itemNotes').value,
+                date: new Date().toLocaleDateString()
+            };
+
+            vaultData.unshift(newItem); // Add to top
+            localStorage.setItem('sustainVault', JSON.stringify(vaultData));
+            
+            toggleForm();
+            renderVault();
+            updateStats();
+            
+            // Clear fields
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemPart').value = '';
+            document.getElementById('itemNotes').value = '';
+        }
+
+        // 2. Render List
+        function renderVault() {
+            const list = document.getElementById('vault-list');
+            list.innerHTML = '';
+
+            const filtered = vaultData.filter(item => {
+                if(currentTab === 'vehicle') return item.category === 'Vehicle';
+                if(currentTab === 'property') return item.category !== 'Vehicle';
+                return false; // Dashboard handles itself
+            });
+
+            if(filtered.length === 0 && currentTab !== 'dashboard') {
+                list.innerHTML = `<div class="text-center text-gray-600 mt-10 italic">No logs found for ${currentTab}.</div>`;
                 return;
             }
 
-            data.forEach((item, index) => {
-                // Determine Icon based on Category
-                let icon = 'fa-box';
-                let color = 'text-gray-400';
-                if(item.category === 'Vehicle') { icon = 'fa-car'; color = 'text-blue-400'; }
-                if(item.category === 'Home') { icon = 'fa-home'; color = 'text-green-400'; }
-                if(item.category === 'Outdoor') { icon = 'fa-leaf'; color = 'text-yellow-400'; }
-                if(item.category === 'Electronics') { icon = 'fa-laptop'; color = 'text-purple-400'; }
+            filtered.forEach(item => {
+                const isRepair = item.type === 'repair';
+                const badgeColor = isRepair ? 'bg-green-900 text-green-300' : 'bg-blue-900 text-blue-300';
+                const icon = item.category === 'Vehicle' ? 'fa-car' : 'fa-tools';
 
-                const card = `
-                    <div class="bg-gray-800 rounded-lg p-4 border-l-4 border-gray-700 hover:border-blue-500 transition-all shadow-md relative group">
-                        <button onclick="deleteItem(${index})" class="absolute top-2 right-2 text-gray-600 hover:text-red-500 p-2">
+                list.innerHTML += `
+                    <div class="bg-gray-800 rounded-lg p-4 border border-gray-700 shadow-sm relative group">
+                        <button onclick="deleteItem(${item.id})" class="absolute top-3 right-3 text-gray-600 hover:text-red-500">
                             <i class="fas fa-trash"></i>
                         </button>
-                        
-                        <div class="flex items-start">
-                            <div class="mt-1 mr-4 ${color} text-2xl">
-                                <i class="fas ${icon}"></i>
-                            </div>
-                            <div class="flex-1">
-                                <div class="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">${item.category}</div>
-                                <h3 class="text-xl font-bold text-white leading-tight mb-1">${item.name}</h3>
-                                <div class="font-mono text-yellow-400 text-lg mb-2 bg-gray-900 inline-block px-2 rounded border border-gray-700">
-                                    ${item.part}
+                        <div class="flex items-start gap-4">
+                            <div class="mt-1 text-2xl text-gray-500"><i class="fas ${icon}"></i></div>
+                            <div>
+                                <h3 class="font-bold text-white text-lg">${item.name}</h3>
+                                <div class="flex flex-wrap gap-2 my-1">
+                                    <span class="text-xs font-bold px-2 py-0.5 rounded ${badgeColor} uppercase tracking-wide border border-gray-700">
+                                        ${item.type}
+                                    </span>
+                                    <span class="text-xs font-mono text-yellow-500 bg-gray-900 px-2 py-0.5 rounded border border-gray-700">
+                                        ${item.part || 'N/A'}
+                                    </span>
                                 </div>
-                                <div class="text-sm text-gray-400">
-                                    <span class="mr-3"><i class="fas fa-tag mr-1"></i> $${item.cost}</span>
-                                    <span><i class="fas fa-info-circle mr-1"></i> ${item.notes}</span>
-                                </div>
+                                <p class="text-sm text-gray-400 mt-1"><i class="fas fa-sticky-note mr-1 opacity-50"></i> ${item.notes}</p>
+                                <p class="text-[10px] text-gray-600 mt-2 uppercase font-mono">${item.date}</p>
                             </div>
                         </div>
                     </div>
                 `;
-                list.innerHTML += card;
             });
-        }
-
-        // 2. Add New Item
-        function addItem() {
-            const name = document.getElementById('itemName').value;
-            const cat = document.getElementById('itemCategory').value;
-            const part = document.getElementById('itemPart').value;
-            const cost = document.getElementById('itemCost').value;
-            const notes = document.getElementById('itemNotes').value;
-
-            if (!name || !part) return alert("Please enter at least a Name and Part Number.");
-
-            const newItem = { name, category: cat, part, cost: cost || '0', notes: notes || '' };
-            
-            const data = JSON.parse(localStorage.getItem('maintVaultData')) || [];
-            data.push(newItem); // Add to top
-            localStorage.setItem('maintVaultData', JSON.stringify(data));
-            
-            // Clear inputs
-            document.getElementById('itemName').value = '';
-            document.getElementById('itemPart').value = '';
-            document.getElementById('itemCost').value = '';
-            document.getElementById('itemNotes').value = '';
-            
-            loadVault();
         }
 
         // 3. Delete Item
-        function deleteItem(index) {
-            if(!confirm("Delete this item?")) return;
-            const data = JSON.parse(localStorage.getItem('maintVaultData')) || [];
-            data.splice(index, 1);
-            localStorage.setItem('maintVaultData', JSON.stringify(data));
-            loadVault();
+        function deleteItem(id) {
+            if(confirm("Delete this log?")) {
+                vaultData = vaultData.filter(item => item.id !== id);
+                localStorage.setItem('sustainVault', JSON.stringify(vaultData));
+                renderVault();
+                updateStats();
+            }
         }
 
-        // 4. Export to CSV
-        function exportData() {
-            const data = JSON.parse(localStorage.getItem('maintVaultData')) || [];
-            if (data.length === 0) return alert("Nothing to export!");
+        // 4. Update Stats & CO2 Logic
+        function updateStats() {
+            const repaired = vaultData.filter(i => i.type === 'repair').length;
+            const replaced = vaultData.filter(i => i.type === 'replace').length;
+            const total = repaired + replaced;
+
+            // Simple "Green Math": Repairs save roughly 10kg CO2 avg vs manufacturing new parts
+            const co2Saved = repaired * 10; 
+
+            document.getElementById('co2-stat').innerText = `${co2Saved} kg`;
+            document.getElementById('dash-repaired').innerText = repaired;
+            document.getElementById('dash-replaced').innerText = replaced;
+
+            // Circular Economy Score
+            const score = total === 0 ? 0 : Math.round((repaired / total) * 100);
+            document.getElementById('impact-bar').style.width = `${score}%`;
+            document.getElementById('impact-percent').innerText = `${score}% Sustainability Score`;
+        }
+
+        // 5. Tab Switching
+        function switchTab(tab) {
+            currentTab = tab;
             
-            let csv = "Name,Category,Part Number,Cost,Notes\n";
-            data.forEach(item => {
-                csv += `"${item.name}","${item.category}","${item.part}","${item.cost}","${item.notes}"\n`;
+            // UI Updates
+            document.querySelectorAll('header button').forEach(b => {
+                b.classList.remove('tab-active', 'text-blue-400');
+                b.classList.add('hover:text-gray-300');
             });
+            document.getElementById(`tab-${tab}`).classList.add('tab-active', 'text-blue-400');
 
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'MaintenanceVault_Backup.csv';
-            a.click();
+            // View Updates
+            if(tab === 'dashboard') {
+                document.getElementById('vault-list').classList.add('hidden');
+                document.getElementById('dashboard-view').classList.remove('hidden');
+                document.getElementById('input-form').classList.add('hidden');
+            } else {
+                document.getElementById('vault-list').classList.remove('hidden');
+                document.getElementById('dashboard-view').classList.add('hidden');
+                document.getElementById('input-form').classList.add('hidden');
+                renderVault();
+            }
         }
 
-        // 5. Import CSV
-        function importData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                const lines = text.split('\n');
-                const newData = [];
-                
-                // Skip header row (i=1)
-                for(let i=1; i<lines.length; i++) {
-                    if(lines[i].trim() === '') continue;
-                    // Simple regex to handle quotes in CSV
-                    const cols = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-                    const cleanCols = cols.map(c => c.replace(/^"|"$/g, '')); // Remove quotes
-                    
-                    if(cleanCols.length >= 3) {
-                        newData.push({
-                            name: cleanCols[0],
-                            category: cleanCols[1] || 'General',
-                            part: cleanCols[2],
-                            cost: cleanCols[3] || '0',
-                            notes: cleanCols[4] || ''
-                        });
-                    }
-                }
-                
-                if(confirm(`Import found ${newData.length} items. This will replace your current list. Continue?`)) {
-                    localStorage.setItem('maintVaultData', JSON.stringify(newData));
-                    loadVault();
-                }
-            };
-            reader.readAsText(file);
+        function toggleForm() {
+            const form = document.getElementById('input-form');
+            form.classList.toggle('hidden');
+            if(!form.classList.contains('hidden')) {
+                // Auto-set category based on tab
+                const cat = currentTab === 'vehicle' ? 'Vehicle' : 'Property';
+                document.getElementById('itemCategory').value = cat;
+            }
         }
     </script>
 </body>
 </html>
-
