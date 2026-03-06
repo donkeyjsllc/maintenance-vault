@@ -1,10 +1,10 @@
 {
-  "name": "Maintenance Vault",
-  "short_name": "MaintVault",
+  "name": "ServiceSync",
+  "short_name": "ServiceSync",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#121212",
-  "theme_color": "#121212",
+  "background_color": "#111827",
+  "theme_color": "#1f2937",
   "orientation": "portrait",
   "icons": [
     {
