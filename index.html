@@ -36,6 +36,7 @@
             
             <div class="flex flex-col items-end">
                 <div id="user-display" class="hidden text-[10px] text-blue-400 font-bold mb-1 flex items-center gap-2">
+                    <i id="sync-indicator" class="fas fa-cloud text-gray-600 hidden" title="Cloud Sync Active"></i>
                     <span id="user-email"></span>
                     <button onclick="handleSignOut()" class="text-gray-500 hover:text-white"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
@@ -246,13 +247,14 @@
             }
 
             const newItem = {
-                id: Date.now(),
+                itemId: Date.now().toString(),
                 name: name,
                 category: document.getElementById('itemCategory').value,
                 part: document.getElementById('itemPart').value,
                 type: document.querySelector('input[name="actionType"]:checked').value,
                 notes: document.getElementById('itemNotes').value,
-                date: new Date().toISOString()
+                date: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
             };
             vaultData.unshift(newItem);
             localStorage.setItem('sustainVault', JSON.stringify(vaultData));
@@ -262,6 +264,70 @@
             document.getElementById('itemName').value = '';
             document.getElementById('itemPart').value = '';
             document.getElementById('itemNotes').value = '';
+            syncToAWS();
+        }
+
+        async function syncToAWS() {
+            if (!currentUser || currentUser.tier !== 'Premium') return;
+
+            const indicator = document.getElementById('sync-indicator');
+            indicator.classList.remove('hidden', 'text-gray-600', 'text-red-500');
+            indicator.classList.add('text-blue-500', 'fa-spin');
+
+            try {
+                const session = await aws_amplify.Auth.currentSession();
+                const token = session.getAccessToken().getJwtToken();
+                // Replace with your actual API Gateway endpoint
+                const apiEndpoint = 'https://YOUR_API_ID.execute-api.REGION.amazonaws.com/prod/sync';
+
+                console.log("Syncing to AWS...");
+
+                // 1. Push local changes to cloud
+                const pushResponse = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(vaultData)
+                });
+
+                if (!pushResponse.ok) throw new Error("Cloud push failed");
+
+                // 2. Fetch latest state from cloud to merge back
+                const pullResponse = await fetch(apiEndpoint, {
+                    method: 'GET',
+                    headers: { 'Authorization': token }
+                });
+                const cloudData = await pullResponse.json();
+
+                // 3. Last-Write-Wins Merge Logic
+                let merged = [...vaultData];
+                cloudData.forEach(cloudItem => {
+                    const localIndex = merged.findIndex(i => i.itemId === cloudItem.itemId);
+                    if (localIndex > -1) {
+                        // Only replace if cloud version is strictly newer
+                        if (new Date(cloudItem.updatedAt) > new Date(merged[localIndex].updatedAt)) {
+                            merged[localIndex] = cloudItem;
+                        }
+                    } else {
+                        // Item exists in cloud but not locally
+                        merged.push(cloudItem);
+                    }
+                });
+
+                // 4. Update local state
+                vaultData = merged.sort((a,b) => new Date(b.date) - new Date(a.date));
+                localStorage.setItem('sustainVault', JSON.stringify(vaultData));
+                renderVault();
+                updateStats();
+
+                indicator.classList.remove('fa-spin', 'text-blue-500');
+                indicator.classList.add('text-green-500');
+                console.log("Sync Complete");
+
+            } catch (error) {
+                console.error("Sync Error:", error);
+                indicator.classList.remove('fa-spin', 'text-blue-500');
+                indicator.classList.add('text-red-500');
+            }
         }
 
         function renderVault() {
@@ -285,7 +351,7 @@
                 const displayDate = new Date(item.date).toLocaleDateString();
                 list.innerHTML += `
                     <div class="bg-gray-800 rounded-lg p-4 border border-gray-700 shadow-sm relative group hover:border-blue-500 transition-colors">
-                        <button onclick="deleteItem(${item.id})" class="absolute top-3 right-3 text-gray-600 hover:text-red-500 p-2"><i class="fas fa-trash"></i></button>
+                        <button onclick="deleteItem('${item.itemId}')" class="absolute top-3 right-3 text-gray-600 hover:text-red-500 p-2"><i class="fas fa-trash"></i></button>
                         <div class="flex items-start gap-4">
                             <div class="mt-1 text-2xl text-gray-500 bg-gray-900 p-3 rounded-full h-12 w-12 flex items-center justify-center border border-gray-700"><i class="fas ${icon}"></i></div>
                             <div class="flex-1">
@@ -302,12 +368,13 @@
             });
         }
 
-        function deleteItem(id) {
+        function deleteItem(itemId) {
             if(confirm("Delete this log permanently?")) {
-                vaultData = vaultData.filter(item => item.id !== id);
+                vaultData = vaultData.filter(item => item.itemId !== itemId);
                 localStorage.setItem('sustainVault', JSON.stringify(vaultData));
                 renderVault();
                 updateStats();
+                syncToAWS();
             }
         }
 
@@ -488,6 +555,7 @@
                 document.getElementById('user-display').classList.remove('hidden');
                 document.getElementById('login-btn').classList.add('hidden');
                 console.log("Current User Tier:", currentUser.tier);
+                syncToAWS();
             } catch (e) {
                 currentUser = null;
                 document.getElementById('user-display').classList.add('hidden');
