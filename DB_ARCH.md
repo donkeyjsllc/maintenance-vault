@@ -19,6 +19,14 @@ To support scalable, multi-user storage with offline-first capabilities, the fol
 | `updatedAt` | String | The last time the record was modified (ISO 8601). |
 | `isDeleted` | Boolean | Soft delete flag for synchronization. |
 
+**Table Name:** `MaintenanceVault-Users`
+
+| Attribute | Type | Description |
+| :--- | :--- | :--- |
+| `userId` | String (PK) | The Cognito `sub` (UUID) of the authenticated user. |
+| `tier` | String | "Free" or "Premium". |
+| `updatedAt` | String | Last modified timestamp (ISO 8601). |
+
 ### Why this PK/SK?
 Using `userId` as the Partition Key ensures that all data for a single user is co-located, allowing for efficient queries of a user's entire vault. Using `itemId` as the Sort Key allows for unique identification of items and efficient updates/deletes.
 

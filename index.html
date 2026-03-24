@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- AWS Amplify for Auth -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-amplify/5.3.11/aws-amplify.min.js"></script>
+    <!-- RevenueCat Web SDK -->
+    <script src="https://unpkg.com/@revenuecat/purchases-js@1.29.0/dist/Purchases.umd.js"></script>
 
     <style>
         ::-webkit-scrollbar { width: 6px; }
@@ -152,6 +154,59 @@
     </button>
 
     <!-- Auth Modal -->
+    <!-- Paywall Modal -->
+    <div id="paywall-modal" class="hidden fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-gray-800 w-full max-w-md rounded-2xl border border-blue-500/30 shadow-2xl overflow-hidden animate-fade-in">
+            <div class="p-6 border-b border-gray-700 flex justify-between items-center bg-gradient-to-r from-blue-900/20 to-transparent">
+                <h2 class="text-xl font-bold text-white tracking-tight flex items-center">
+                    <i class="fas fa-crown text-yellow-500 mr-2"></i>Upgrade to Premium
+                </h2>
+                <button onclick="togglePaywall()" class="text-gray-500 hover:text-white transition-colors"><i class="fas fa-times text-lg"></i></button>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <div class="space-y-4">
+                    <div class="flex items-start gap-4">
+                        <div class="bg-blue-900/40 p-2 rounded-lg text-blue-400"><i class="fas fa-cloud-upload-alt w-5 text-center"></i></div>
+                        <div>
+                            <h4 class="text-white font-bold text-sm">Unlimited Cloud Sync</h4>
+                            <p class="text-xs text-gray-400">Access your maintenance logs from any device, anytime.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="bg-blue-900/40 p-2 rounded-lg text-blue-400"><i class="fas fa-infinity w-5 text-center"></i></div>
+                        <div>
+                            <h4 class="text-white font-bold text-sm">Unlimited Assets</h4>
+                            <p class="text-xs text-gray-400">Track as many vehicles, properties, or tools as you need.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="bg-blue-900/40 p-2 rounded-lg text-blue-400"><i class="fas fa-file-pdf w-5 text-center"></i></div>
+                        <div>
+                            <h4 class="text-white font-bold text-sm">PDF Service Reports</h4>
+                            <p class="text-xs text-gray-400">Generate professional reports for resale or insurance.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900 p-4 rounded-xl border border-gray-700">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs text-gray-400 uppercase font-bold tracking-wider">Premium Access</span>
+                        <span class="text-lg font-bold text-white">$4.99 / year</span>
+                    </div>
+                    <p class="text-[10px] text-gray-500 italic">One low price for total peace of mind and data security.</p>
+                </div>
+
+                <button onclick="handleUpgrade()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3">
+                    <i class="fas fa-bolt"></i>
+                    <span>ACTIVATE PREMIUM NOW</span>
+                </button>
+
+                <p class="text-[9px] text-center text-gray-600 uppercase tracking-widest font-bold">Secure Checkout via Stripe or Google Play</p>
+            </div>
+        </div>
+    </div>
+
     <div id="auth-modal" class="hidden fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-gray-800 w-full max-w-md rounded-2xl border border-gray-700 shadow-2xl overflow-hidden animate-fade-in">
             <div class="p-6 border-b border-gray-700 flex justify-between items-center">
@@ -214,6 +269,8 @@
             }
         };
 
+        const REVENUECAT_PUBLIC_API_KEY = 'YOUR_REVENUECAT_PUBLIC_API_KEY';
+
         // Initialize Amplify
         if (typeof aws_amplify !== 'undefined') {
             aws_amplify.Amplify.configure(amplifyConfig);
@@ -241,8 +298,7 @@
             // Freemium Phase 1: 5-asset limit for Free tier
             const isPremium = currentUser && currentUser.tier === 'Premium';
             if (!isPremium && vaultData.length >= 5) {
-                alert("Free Tier Limit Reached: You have used all 5 local assets. Please sign in or upgrade to Premium for unlimited storage and cloud sync.");
-                toggleAuthModal();
+                togglePaywall();
                 return;
             }
 
@@ -551,6 +607,12 @@
                 const tierAttr = attributes.find(a => a.Name === 'custom:tier');
                 currentUser.tier = tierAttr ? tierAttr.Value : 'Free';
 
+                // Configure RevenueCat with Cognito sub
+                if (typeof Purchases !== 'undefined') {
+                    Purchases.Purchases.configure(REVENUECAT_PUBLIC_API_KEY, user.attributes.sub);
+                    await updateTierFromRevenueCat();
+                }
+
                 document.getElementById('user-email').innerText = user.attributes.email;
                 document.getElementById('user-display').classList.remove('hidden');
                 document.getElementById('login-btn').classList.add('hidden');
@@ -560,6 +622,79 @@
                 currentUser = null;
                 document.getElementById('user-display').classList.add('hidden');
                 document.getElementById('login-btn').classList.remove('hidden');
+            }
+        }
+
+        async function updateTierFromRevenueCat() {
+            try {
+                const customerInfo = await Purchases.Purchases.getCustomerInfo();
+                if (customerInfo.entitlements.active['Premium']) {
+                    currentUser.tier = 'Premium';
+                } else {
+                    currentUser.tier = 'Free';
+                }
+                // Optionally sync back to Cognito if there's a mismatch
+            } catch (e) {
+                console.error("RevenueCat Error:", e);
+            }
+        }
+
+        function togglePaywall() {
+            if (!currentUser) {
+                alert("Please sign in first to manage subscriptions.");
+                toggleAuthModal();
+                return;
+            }
+            const modal = document.getElementById('paywall-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        async function handleUpgrade() {
+            const isAndroidTWA = window.matchMedia('(display-mode: standalone)').matches && /android/i.test(navigator.userAgent);
+
+            try {
+                if (isAndroidTWA && 'getDigitalGoodsService' in window) {
+                    // Google Play Billing via Digital Goods API
+                    const service = await window.getDigitalGoodsService('https://play.google.com/billing');
+                    const details = await service.getDetails(['premium_subscription']);
+
+                    const paymentMethods = [{
+                        supportedMethods: 'https://play.google.com/billing',
+                        data: { sku: 'premium_subscription' }
+                    }];
+                    const paymentDetails = {
+                        total: {
+                            label: 'Total',
+                            amount: { currency: 'USD', value: '4.99' }
+                        }
+                    };
+
+                    const request = new PaymentRequest(paymentMethods, paymentDetails);
+                    const response = await request.show();
+
+                    // After successful payment, sync with RevenueCat
+                    await Purchases.Purchases.syncPurchases();
+                    await response.complete('success');
+
+                } else {
+                    // Standard Web: Stripe via RevenueCat
+                    const offerings = await Purchases.Purchases.getOfferings();
+                    if (offerings.current && offerings.current.availablePackages.length > 0) {
+                        const packageToBuy = offerings.current.availablePackages[0];
+                        await Purchases.Purchases.purchasePackage(packageToBuy);
+                    } else {
+                        throw new Error("No products available for purchase.");
+                    }
+                }
+
+                await updateTierFromRevenueCat();
+                if (currentUser.tier === 'Premium') {
+                    alert("Welcome to Premium! Your sync features are now active.");
+                    togglePaywall();
+                }
+            } catch (error) {
+                console.error("Upgrade Error:", error);
+                alert("Purchase failed: " + error.message);
             }
         }
 
