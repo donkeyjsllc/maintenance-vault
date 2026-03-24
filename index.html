@@ -8,12 +8,16 @@
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- AWS Amplify for Auth -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-amplify/5.3.11/aws-amplify.min.js"></script>
 
     <style>
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #111827; }
         ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
         .tab-active { border-bottom: 2px solid #3b82f6; color: #60a5fa; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
     </style>
 </head>
 
@@ -31,6 +35,12 @@
             </div>
             
             <div class="flex flex-col items-end">
+                <div id="user-display" class="hidden text-[10px] text-blue-400 font-bold mb-1 flex items-center gap-2">
+                    <span id="user-email"></span>
+                    <button onclick="handleSignOut()" class="text-gray-500 hover:text-white"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+                <button id="login-btn" onclick="toggleAuthModal()" class="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded mb-1 transition-all">SIGN IN / JOIN</button>
+
                 <div class="text-[10px] text-gray-400 uppercase mb-1">CO2 Avoided: <span id="co2-stat" class="text-green-400 font-bold">0 kg</span></div>
                 <label class="inline-flex items-center cursor-pointer">
                     <input type="checkbox" id="notify-toggle" class="sr-only peer" onchange="toggleNotifications()">
@@ -140,13 +150,83 @@
         <i class="fas fa-plus text-xl"></i>
     </button>
 
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="hidden fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-gray-800 w-full max-w-md rounded-2xl border border-gray-700 shadow-2xl overflow-hidden animate-fade-in">
+            <div class="p-6 border-b border-gray-700 flex justify-between items-center">
+                <h2 id="auth-title" class="text-xl font-bold text-white tracking-tight flex items-center">
+                    <i class="fas fa-user-circle text-blue-500 mr-2"></i>Sign In
+                </h2>
+                <button onclick="toggleAuthModal()" class="text-gray-500 hover:text-white transition-colors"><i class="fas fa-times text-lg"></i></button>
+            </div>
+
+            <div class="p-6">
+                <!-- Sign In / Up Form -->
+                <div id="auth-form-container">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Email Address</label>
+                            <input type="email" id="auth-email" placeholder="name@email.com" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-all">
+                        </div>
+                        <div id="password-group">
+                            <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Password</label>
+                            <input type="password" id="auth-password" placeholder="••••••••" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-all">
+                        </div>
+                        <div id="confirm-password-group" class="hidden">
+                            <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Confirm Password</label>
+                            <input type="password" id="auth-confirm-password" placeholder="••••••••" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-all">
+                        </div>
+                        <div id="verification-group" class="hidden">
+                            <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Verification Code</label>
+                            <input type="text" id="auth-code" placeholder="123456" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-blue-500 outline-none transition-all">
+                        </div>
+
+                        <button id="auth-submit-btn" onclick="handleAuthSubmit()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                            <span>SIGN IN</span>
+                            <i class="fas fa-chevron-right text-xs"></i>
+                        </button>
+
+                        <div class="text-center mt-4">
+                            <button id="auth-switch-btn" onclick="switchAuthMode()" class="text-xs text-gray-400 hover:text-blue-400 underline transition-colors">Don't have an account? Sign Up</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="auth-status-msg" class="mt-4 p-3 rounded text-xs text-center hidden"></div>
+            </div>
+
+            <div class="p-4 bg-gray-900/50 text-center">
+                <p class="text-[9px] text-gray-500 uppercase tracking-widest font-bold flex items-center justify-center gap-2">
+                    <i class="fas fa-shield-alt text-blue-500/50"></i> MaintenanceVault Secure Cloud
+                </p>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // AWS Amplify Configuration (Placeholders)
+        const amplifyConfig = {
+            Auth: {
+                region: 'YOUR_AWS_REGION',
+                userPoolId: 'YOUR_USER_POOL_ID',
+                userPoolWebClientId: 'YOUR_APP_CLIENT_ID',
+            }
+        };
+
+        // Initialize Amplify
+        if (typeof aws_amplify !== 'undefined') {
+            aws_amplify.Amplify.configure(amplifyConfig);
+        }
+
         let vaultData = JSON.parse(localStorage.getItem('sustainVault')) || [];
         let currentTab = 'vehicle';
+        let currentUser = null;
+        let authMode = 'signin'; // 'signin', 'signup', 'confirm'
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             renderVault();
             updateStats();
+            await checkUserSession();
             const isEnabled = localStorage.getItem('notificationsEnabled') === 'true';
             document.getElementById('notify-toggle').checked = isEnabled;
             if (isEnabled) checkForDueMaintenance();
@@ -156,6 +236,15 @@
         function addItem() {
             const name = document.getElementById('itemName').value;
             if(!name) return alert("Item Name is required");
+
+            // Freemium Phase 1: 5-asset limit for Free tier
+            const isPremium = currentUser && currentUser.tier === 'Premium';
+            if (!isPremium && vaultData.length >= 5) {
+                alert("Free Tier Limit Reached: You have used all 5 local assets. Please sign in or upgrade to Premium for unlimited storage and cloud sync.");
+                toggleAuthModal();
+                return;
+            }
+
             const newItem = {
                 id: Date.now(),
                 name: name,
@@ -285,6 +374,133 @@
             form.classList.toggle('hidden');
             if(!form.classList.contains('hidden')) {
                 document.getElementById('itemCategory').value = currentTab === 'vehicle' ? 'Vehicle' : 'Property';
+            }
+        }
+
+        // --- AUTH LOGIC ---
+        function toggleAuthModal() {
+            const modal = document.getElementById('auth-modal');
+            modal.classList.toggle('hidden');
+            clearAuthStatus();
+        }
+
+        function clearAuthStatus() {
+            const statusMsg = document.getElementById('auth-status-msg');
+            statusMsg.classList.add('hidden');
+            statusMsg.innerText = '';
+        }
+
+        function showAuthStatus(msg, isError = true) {
+            const statusMsg = document.getElementById('auth-status-msg');
+            statusMsg.innerText = msg;
+            statusMsg.classList.remove('hidden', 'bg-red-900/50', 'text-red-400', 'bg-green-900/50', 'text-green-400');
+            statusMsg.classList.add(isError ? 'bg-red-900/50' : 'bg-green-900/50', isError ? 'text-red-400' : 'text-green-400');
+        }
+
+        function switchAuthMode() {
+            const title = document.getElementById('auth-title');
+            const submitBtn = document.getElementById('auth-submit-btn');
+            const switchBtn = document.getElementById('auth-switch-btn');
+            const confirmPassGroup = document.getElementById('confirm-password-group');
+            const passwordGroup = document.getElementById('password-group');
+            const verificationGroup = document.getElementById('verification-group');
+
+            clearAuthStatus();
+
+            if (authMode === 'signin') {
+                authMode = 'signup';
+                title.innerHTML = '<i class="fas fa-user-plus text-blue-500 mr-2"></i>Create Account';
+                submitBtn.querySelector('span').innerText = 'CREATE ACCOUNT';
+                switchBtn.innerText = 'Already have an account? Sign In';
+                confirmPassGroup.classList.remove('hidden');
+                passwordGroup.classList.remove('hidden');
+                verificationGroup.classList.add('hidden');
+            } else {
+                authMode = 'signin';
+                title.innerHTML = '<i class="fas fa-user-circle text-blue-500 mr-2"></i>Sign In';
+                submitBtn.querySelector('span').innerText = 'SIGN IN';
+                switchBtn.innerText = "Don't have an account? Sign Up";
+                confirmPassGroup.classList.add('hidden');
+                passwordGroup.classList.remove('hidden');
+                verificationGroup.classList.add('hidden');
+            }
+        }
+
+        async function handleAuthSubmit() {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const confirmPassword = document.getElementById('auth-confirm-password').value;
+            const code = document.getElementById('auth-code').value;
+
+            if (!email) return showAuthStatus("Email is required");
+
+            try {
+                if (authMode === 'signin') {
+                    if (!password) return showAuthStatus("Password is required");
+                    const user = await aws_amplify.Auth.signIn(email, password);
+                    console.log("Logged in:", user);
+                    await checkUserSession();
+                    toggleAuthModal();
+                }
+                else if (authMode === 'signup') {
+                    if (!password) return showAuthStatus("Password is required");
+                    if (password !== confirmPassword) return showAuthStatus("Passwords do not match");
+
+                    await aws_amplify.Auth.signUp({
+                        username: email,
+                        password,
+                        attributes: {
+                            email,
+                            'custom:tier': 'Free'
+                        }
+                    });
+
+                    authMode = 'confirm';
+                    document.getElementById('auth-title').innerHTML = '<i class="fas fa-check-circle text-blue-500 mr-2"></i>Verify Email';
+                    document.getElementById('auth-submit-btn').querySelector('span').innerText = 'VERIFY CODE';
+                    document.getElementById('password-group').classList.add('hidden');
+                    document.getElementById('confirm-password-group').classList.add('hidden');
+                    document.getElementById('verification-group').classList.remove('hidden');
+                    showAuthStatus("Verification code sent to email", false);
+                }
+                else if (authMode === 'confirm') {
+                    if (!code) return showAuthStatus("Verification code is required");
+                    await aws_amplify.Auth.confirmSignUp(email, code);
+                    authMode = 'signup'; // Set to signup so switchAuthMode toggles it to signin
+                    switchAuthMode();
+                    showAuthStatus("Account verified! You can now sign in.", false);
+                }
+            } catch (error) {
+                console.error("Auth error:", error);
+                showAuthStatus(error.message || "An error occurred");
+            }
+        }
+
+        async function checkUserSession() {
+            try {
+                const user = await aws_amplify.Auth.currentAuthenticatedUser();
+                currentUser = user;
+                const attributes = await aws_amplify.Auth.userAttributes(user);
+                const tierAttr = attributes.find(a => a.Name === 'custom:tier');
+                currentUser.tier = tierAttr ? tierAttr.Value : 'Free';
+
+                document.getElementById('user-email').innerText = user.attributes.email;
+                document.getElementById('user-display').classList.remove('hidden');
+                document.getElementById('login-btn').classList.add('hidden');
+                console.log("Current User Tier:", currentUser.tier);
+            } catch (e) {
+                currentUser = null;
+                document.getElementById('user-display').classList.add('hidden');
+                document.getElementById('login-btn').classList.remove('hidden');
+            }
+        }
+
+        async function handleSignOut() {
+            try {
+                await aws_amplify.Auth.signOut();
+                await checkUserSession();
+            } catch (error) {
+                console.error("Sign out error:", error);
             }
         }
     </script>
