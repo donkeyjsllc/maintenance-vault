@@ -34,6 +34,9 @@
                 <button onclick="window.location.reload()" class="bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white rounded-full w-8 h-8 flex items-center justify-center transition-all shadow-sm" title="Reload App">
                     <i class="fas fa-sync-alt text-xs"></i>
                 </button>
+                <button onclick="toggleSettingsModal()" class="bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white rounded-full w-8 h-8 flex items-center justify-center transition-all shadow-sm" title="Settings">
+                    <i class="fas fa-cog text-xs"></i>
+                </button>
             </div>
             
             <div class="flex flex-col items-end">
@@ -203,6 +206,40 @@
                 </button>
 
                 <p class="text-[9px] text-center text-gray-600 uppercase tracking-widest font-bold">Secure Checkout via Stripe or Google Play</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="hidden fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-blue-950 w-full max-w-md rounded-2xl border border-gray-700 shadow-2xl overflow-hidden animate-fade-in">
+            <div class="p-6 border-b border-gray-700 flex justify-between items-center bg-gradient-to-r from-blue-900/20 to-transparent">
+                <h2 class="text-xl font-bold text-white tracking-tight flex items-center">
+                    <i class="fas fa-cog text-yellow-500 mr-2"></i>Settings
+                </h2>
+                <button onclick="toggleSettingsModal()" class="text-gray-500 hover:text-white transition-colors"><i class="fas fa-times text-lg"></i></button>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <div class="space-y-4">
+                    <h4 class="text-white font-bold text-sm">Data Management</h4>
+                    <p class="text-xs text-gray-400">Export your maintenance logs to a CSV file for backup or use in other applications.</p>
+
+                    <button onclick="exportToCSV()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                        <i class="fas fa-file-export text-sm"></i>
+                        <span>EXPORT DATA (CSV)</span>
+                    </button>
+                </div>
+
+                <div class="pt-4 border-t border-gray-700">
+                    <button onclick="toggleSettingsModal()" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg transition-all">CLOSE</button>
+                </div>
+            </div>
+
+            <div class="p-4 bg-gray-900/50 text-center">
+                <p class="text-[9px] text-gray-500 uppercase tracking-widest font-bold flex items-center justify-center gap-2">
+                    <i class="fas fa-shield-alt text-blue-500/50"></i> MaintenanceVault Data Security
+                </p>
             </div>
         </div>
     </div>
@@ -500,6 +537,43 @@
             if(!form.classList.contains('hidden')) {
                 document.getElementById('itemCategory').value = currentTab === 'vehicle' ? 'Vehicle' : 'Property';
             }
+        }
+
+        function toggleSettingsModal() {
+            const modal = document.getElementById('settings-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        function exportToCSV() {
+            if (vaultData.length === 0) {
+                alert("No data to export.");
+                return;
+            }
+
+            const headers = ['itemId', 'name', 'category', 'part', 'type', 'notes', 'date', 'updatedAt'];
+            const csvRows = [headers.join(',')];
+
+            vaultData.forEach(item => {
+                const values = headers.map(header => {
+                    const val = item[header] || '';
+                    const escaped = ('' + val).replace(/"/g, '""');
+                    return `"${escaped}"`;
+                });
+                csvRows.push(values.join(','));
+            });
+
+            const csvString = csvRows.join('\n');
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const date = new Date().toISOString().split('T')[0];
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', `MaintenanceVault_Backup_${date}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         // --- AUTH LOGIC ---
