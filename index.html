@@ -78,6 +78,11 @@
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
+                    <label class="block text-xs text-gray-500 uppercase mb-1">Asset Name</label>
+                    <input type="text" id="itemAssetName" placeholder="e.g. Silverado, Home, etc." class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none transition-colors">
+                </div>
+
+                <div>
                     <label class="block text-xs text-gray-500 uppercase mb-1">Item Name</label>
                     <input type="text" id="itemName" placeholder="e.g. Oil Change 0W-20" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none transition-colors">
                 </div>
@@ -85,9 +90,9 @@
                 <div>
                     <label class="block text-xs text-gray-500 uppercase mb-1">Category</label>
                     <select id="itemCategory" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none">
-                        <option value="Vehicle">Vehicle (Silverado)</option>
-                        <option value="Property">Property / Home</option>
-                        <option value="Equipment">Equipment / Tools</option>
+                        <option value="Vehicle">Vehicle</option>
+                        <option value="Property">Property</option>
+                        <option value="Equipment">Equipment</option>
                     </select>
                 </div>
 
@@ -268,44 +273,9 @@
 
             <div class="p-6">
                 <!-- Sign In / Up Form -->
-                <div id="auth-form-container">
-                    <div class="space-y-4">
-                        <div id="email-group">
-                            <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Email Address</label>
-                            <input type="email" id="auth-email" placeholder="name@email.com" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-600 outline-none transition-all">
-                        </div>
-                        <div id="password-group">
-                            <div class="flex justify-between items-center mb-1 ml-1">
-                                <label class="block text-[10px] text-gray-500 uppercase font-bold">Password</label>
-                                <button id="forgot-password-link" onclick="switchAuthMode('forgot_password')" class="text-[10px] text-blue-500 hover:text-blue-400 font-bold uppercase">Forgot Password?</button>
-                            </div>
-                            <div class="relative">
-                                <input type="password" id="auth-password" placeholder="••••••••" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-600 outline-none transition-all pr-10">
-                                <button type="button" onclick="togglePasswordVisibility('auth-password', 'password-toggle-icon')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-300">
-                                    <i id="password-toggle-icon" class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div id="confirm-password-group" class="hidden">
-                            <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Confirm Password</label>
-                            <div class="relative">
-                                <input type="password" id="auth-confirm-password" placeholder="••••••••" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-600 outline-none transition-all pr-10">
-                                <button type="button" onclick="togglePasswordVisibility('auth-confirm-password', 'confirm-password-toggle-icon')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-300">
-                                    <i id="confirm-password-toggle-icon" class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div id="verification-group" class="hidden">
-                            <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Verification Code</label>
-                            <input type="text" id="auth-code" placeholder="123456" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-600 outline-none transition-all">
-                        </div>
-
-                        <button id="auth-submit-btn" onclick="handleAuthSubmit()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
-                            <span>SIGN IN</span>
-                            <i class="fas fa-chevron-right text-xs"></i>
-                        </button>
-                    </div>
-                </div>
+                <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                    <!-- Dynamic content injected via switchAuthMode() -->
+                </form>
 
                 <div id="auth-status-msg" class="mt-4 p-3 rounded text-xs text-center hidden"></div>
             </div>
@@ -351,6 +321,7 @@
         });
 
         function addItem() {
+            const assetName = document.getElementById('itemAssetName').value;
             const name = document.getElementById('itemName').value;
             if(!name) return alert("Item Name is required");
 
@@ -363,6 +334,7 @@
 
             const newItem = {
                 itemId: Date.now().toString(),
+                assetName: assetName,
                 name: name,
                 category: document.getElementById('itemCategory').value,
                 part: document.getElementById('itemPart').value,
@@ -376,6 +348,7 @@
             toggleForm();
             renderVault();
             updateStats();
+            document.getElementById('itemAssetName').value = '';
             document.getElementById('itemName').value = '';
             document.getElementById('itemPart').value = '';
             document.getElementById('itemNotes').value = '';
@@ -471,6 +444,7 @@
                             <div class="mt-1 text-2xl text-gray-500 bg-gray-900 p-3 rounded-full h-12 w-12 flex items-center justify-center border border-gray-700"><i class="fas ${icon}"></i></div>
                             <div class="flex-1">
                                 <h3 class="font-bold text-white text-lg leading-tight">${item.name}</h3>
+                                <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">${item.assetName || 'General Asset'}</p>
                                 <div class="flex flex-wrap gap-2 my-2">
                                     <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide border ${badgeColor}">${item.type}</span>
                                     <span class="text-[10px] font-mono text-yellow-500 bg-gray-900 px-2 py-0.5 rounded border border-gray-700 truncate max-w-[150px]">${item.part || 'No Part #'}</span>
@@ -570,7 +544,7 @@
                 return;
             }
 
-            const headers = ['itemId', 'name', 'category', 'part', 'type', 'notes', 'date', 'updatedAt'];
+            const headers = ['itemId', 'assetName', 'name', 'category', 'part', 'type', 'notes', 'date', 'updatedAt'];
             const csvRows = [headers.join(',')];
 
             vaultData.forEach(item => {
@@ -635,87 +609,113 @@
 
         function switchAuthMode(mode) {
             authMode = mode;
-            const submitBtn = document.getElementById('auth-submit-btn');
-            const confirmPassGroup = document.getElementById('confirm-password-group');
-            const passwordGroup = document.getElementById('password-group');
-            const verificationGroup = document.getElementById('verification-group');
-            const emailGroup = document.getElementById('email-group');
+            const authForm = document.getElementById('auth-form');
             const authTabs = document.getElementById('auth-tabs');
             const verifyHeader = document.getElementById('verify-header');
             const recoveryHeader = document.getElementById('recovery-header');
-            const forgotPasswordLink = document.getElementById('forgot-password-link');
-            const emailInput = document.getElementById('auth-email');
-            const passwordInput = document.getElementById('auth-password');
-            const confirmPasswordInput = document.getElementById('auth-confirm-password');
-
             const tabSignin = document.getElementById('auth-tab-signin');
             const tabSignup = document.getElementById('auth-tab-signup');
 
             clearAuthStatus();
 
-            // Reset UI
+            // Reset Headers
             authTabs.classList.remove('hidden');
             verifyHeader.classList.add('hidden');
             recoveryHeader.classList.add('hidden');
-            emailGroup.classList.remove('hidden');
-            passwordGroup.classList.remove('hidden');
-            confirmPassGroup.classList.add('hidden');
-            verificationGroup.classList.add('hidden');
-            forgotPasswordLink.classList.add('hidden');
-
-            emailInput.readOnly = false;
-            passwordGroup.querySelector('label').innerText = 'Password';
-
-            // Reset Password Toggles
-            passwordInput.type = 'password';
-            confirmPasswordInput.type = 'password';
-            document.getElementById('password-toggle-icon').className = 'fas fa-eye';
-            document.getElementById('confirm-password-toggle-icon').className = 'fas fa-eye';
-
             tabSignin.className = "flex-1 py-4 text-xs font-bold uppercase tracking-widest transition-all";
             tabSignup.className = "flex-1 py-4 text-xs font-bold uppercase tracking-widest transition-all";
+
+            let formHTML = '';
+
+            const googleSSOButton = `
+                <button type="button" onclick="handleGoogleSignIn()" class="w-full bg-white hover:bg-gray-100 text-gray-900 font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3 mb-2 border border-gray-300">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" alt="Google logo">
+                    <span>Continue with Google</span>
+                </button>
+                <div class="flex items-center gap-4 my-4">
+                    <div class="flex-1 h-px bg-gray-700"></div>
+                    <span class="text-[10px] text-gray-500 font-bold uppercase">Or</span>
+                    <div class="flex-1 h-px bg-gray-700"></div>
+                </div>`;
+
+            const emailField = (email = '', readonly = false) => `
+                <div>
+                    <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Email Address</label>
+                    <input type="email" name="email" id="auth-email" value="${email}" ${readonly ? 'readonly' : ''} autocomplete="username" required placeholder="name@email.com" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-600 outline-none transition-all">
+                </div>`;
+
+            const passwordField = (label = 'Password', id = 'auth-password', autocomplete = 'current-password') => `
+                <div>
+                    <div class="flex justify-between items-center mb-1 ml-1">
+                        <label class="block text-[10px] text-gray-500 uppercase font-bold">${label}</label>
+                        ${mode === 'signin' ? '<button type="button" onclick="switchAuthMode(\'forgot_password\')" class="text-[10px] text-blue-500 hover:text-blue-400 font-bold uppercase">Forgot Password?</button>' : ''}
+                    </div>
+                    <div class="relative">
+                        <input type="password" name="${id === 'auth-password' ? 'password' : 'confirmPassword'}" id="${id}" autocomplete="${autocomplete}" required placeholder="••••••••" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-600 outline-none transition-all pr-10">
+                        <button type="button" onclick="togglePasswordVisibility('${id}', '${id}-toggle-icon')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-300">
+                            <i id="${id}-toggle-icon" class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>`;
+
+            const codeField = `
+                <div>
+                    <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Verification Code</label>
+                    <input type="text" name="code" id="auth-code" autocomplete="one-time-code" required placeholder="123456" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-600 outline-none transition-all">
+                </div>`;
+
+            const submitButton = (text) => `
+                <button type="submit" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <span>${text}</span>
+                    <i class="fas fa-chevron-right text-xs"></i>
+                </button>`;
+
+            // Preserve email if possible
+            let currentEmail = document.getElementById('auth-email')?.value || '';
+            // Basic sanitization
+            currentEmail = currentEmail.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
             if (mode === 'signin') {
                 tabSignin.classList.add('text-yellow-500', 'border-b-2', 'border-yellow-500');
                 tabSignup.classList.add('text-gray-500', 'hover:text-gray-300');
-                submitBtn.querySelector('span').innerText = 'SIGN IN';
-                forgotPasswordLink.classList.remove('hidden');
+                formHTML = googleSSOButton + emailField(currentEmail) + passwordField() + submitButton('SIGN IN');
             } else if (mode === 'signup') {
                 tabSignup.classList.add('text-yellow-500', 'border-b-2', 'border-yellow-500');
                 tabSignin.classList.add('text-gray-500', 'hover:text-gray-300');
-                submitBtn.querySelector('span').innerText = 'CREATE ACCOUNT';
-                confirmPassGroup.classList.remove('hidden');
+                formHTML = googleSSOButton + emailField(currentEmail) + passwordField('Password', 'auth-password', 'new-password') + passwordField('Confirm Password', 'auth-confirm-password', 'new-password') + submitButton('CREATE ACCOUNT');
             } else if (mode === 'confirm') {
                 authTabs.classList.add('hidden');
                 verifyHeader.classList.remove('hidden');
-                passwordGroup.classList.add('hidden');
-                confirmPassGroup.classList.add('hidden');
-                verificationGroup.classList.remove('hidden');
-                submitBtn.querySelector('span').innerText = 'VERIFY CODE';
+                formHTML = emailField(currentEmail, true) + codeField + submitButton('VERIFY CODE');
             } else if (mode === 'forgot_password') {
                 authTabs.classList.add('hidden');
                 recoveryHeader.classList.remove('hidden');
-                passwordGroup.classList.add('hidden');
-                confirmPassGroup.classList.add('hidden');
-                verificationGroup.classList.add('hidden');
-                submitBtn.querySelector('span').innerText = 'SEND RECOVERY CODE';
+                formHTML = emailField(currentEmail) + submitButton('SEND RECOVERY CODE');
             } else if (mode === 'reset_password') {
                 authTabs.classList.add('hidden');
                 recoveryHeader.classList.remove('hidden');
-                passwordGroup.classList.remove('hidden');
-                confirmPassGroup.classList.remove('hidden');
-                verificationGroup.classList.remove('hidden');
-                submitBtn.querySelector('span').innerText = 'RESET PASSWORD';
-                passwordGroup.querySelector('label').innerText = 'New Password';
-                emailInput.readOnly = true;
+                formHTML = emailField(currentEmail, true) + codeField + passwordField('New Password', 'auth-password', 'new-password') + passwordField('Confirm New Password', 'auth-confirm-password', 'new-password') + submitButton('RESET PASSWORD');
+            }
+
+            authForm.innerHTML = formHTML;
+        }
+
+        async function handleGoogleSignIn() {
+            try {
+                await aws_amplify.Auth.federatedSignIn({ provider: 'Google' });
+            } catch (error) {
+                console.error("Google Sign In Error:", error);
+                showAuthStatus(error.message || "An error occurred during Google Sign In");
             }
         }
 
-        async function handleAuthSubmit() {
-            const email = document.getElementById('auth-email').value;
-            const password = document.getElementById('auth-password').value;
-            const confirmPassword = document.getElementById('auth-confirm-password').value;
-            const code = document.getElementById('auth-code').value;
+        async function handleAuthSubmit(event) {
+            if (event) event.preventDefault();
+            const formData = new FormData(document.getElementById('auth-form'));
+            const email = formData.get('email');
+            const password = formData.get('password');
+            const confirmPassword = formData.get('confirmPassword');
+            const code = formData.get('code');
 
             if (!email) return showAuthStatus("Email is required");
 
