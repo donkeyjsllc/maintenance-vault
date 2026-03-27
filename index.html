@@ -8,8 +8,21 @@
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- AWS Amplify for Auth -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-amplify/5.3.11/aws-amplify.min.js"></script>
+    <!-- AWS Amplify for Auth (Loaded via ESM) -->
+    <script type="module">
+        import { Amplify, Auth } from 'https://esm.sh/aws-amplify@5.3.11';
+
+        const amplifyConfig = {
+            Auth: {
+                region: 'YOUR_AWS_REGION',
+                userPoolId: 'YOUR_USER_POOL_ID',
+                userPoolWebClientId: 'YOUR_APP_CLIENT_ID',
+            }
+        };
+
+        Amplify.configure(amplifyConfig);
+        window.aws_amplify = { Amplify, Auth };
+    </script>
     <!-- RevenueCat Web SDK -->
     <script src="https://unpkg.com/@revenuecat/purchases-js@1.29.0/dist/Purchases.umd.js"></script>
 
@@ -289,21 +302,7 @@
     </div>
 
     <script>
-        // AWS Amplify Configuration (Placeholders)
-        const amplifyConfig = {
-            Auth: {
-                region: 'YOUR_AWS_REGION',
-                userPoolId: 'YOUR_USER_POOL_ID',
-                userPoolWebClientId: 'YOUR_APP_CLIENT_ID',
-            }
-        };
-
         const REVENUECAT_PUBLIC_API_KEY = 'YOUR_REVENUECAT_PUBLIC_API_KEY';
-
-        // Initialize Amplify
-        if (typeof aws_amplify !== 'undefined') {
-            aws_amplify.Amplify.configure(amplifyConfig);
-        }
 
         let vaultData = JSON.parse(localStorage.getItem('sustainVault')) || [];
         let currentTab = 'vehicle';
