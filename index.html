@@ -166,6 +166,7 @@
         <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold mb-2">System Notice</p>
         <p class="text-xs text-gray-500 leading-relaxed max-w-md mx-auto">
             ⚠️ <strong>Data stored locally.</strong> This app operates offline. Clearing your browser cache or site data will permanently delete your maintenance logs. 
+            <a href="javascript:void(0)" onclick="exportToCSV()" class="text-blue-500 hover:underline">Back up your logs now</a>.
             <br>Not professional mechanic advice; use specs at your own risk.
         </p>
     </footer>
@@ -332,7 +333,7 @@
             }
 
             const newItem = {
-                itemId: Date.now().toString(),
+                itemId: crypto.randomUUID(),
                 assetName: assetName,
                 name: name,
                 category: document.getElementById('itemCategory').value,
@@ -408,7 +409,6 @@
 
                 indicator.classList.remove('fa-spin', 'text-blue-500');
                 indicator.classList.add('text-green-500');
-                console.log("Sync Complete");
 
             } catch (error) {
                 console.error("Sync Error:", error);
@@ -627,7 +627,7 @@
             let formHTML = '';
 
             const googleSSOButton = `
-                <button type="button" onclick="handleGoogleSignIn()" class="w-full bg-white hover:bg-gray-100 text-gray-900 font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3 mb-2 border border-gray-300">
+                <button type="button" id="google-sso-btn" onclick="handleGoogleSignIn()" class="w-full bg-white hover:bg-gray-100 text-gray-900 font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3 mb-2 border border-gray-300">
                     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" alt="Google logo">
                     <span>Continue with Google</span>
                 </button>
@@ -700,11 +700,21 @@
         }
 
         async function handleGoogleSignIn() {
+            const btn = document.getElementById('google-sso-btn');
+            const originalHTML = btn ? btn.innerHTML : '';
             try {
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Redirecting...`;
+                }
                 await aws_amplify.Auth.federatedSignIn({ provider: 'Google' });
             } catch (error) {
                 console.error("Google Sign In Error:", error);
                 showAuthStatus(error.message || "An error occurred during Google Sign In");
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                }
             }
         }
 
@@ -784,7 +794,6 @@
                 document.getElementById('user-email').innerText = user.attributes.email;
                 document.getElementById('user-display').classList.remove('hidden');
                 document.getElementById('login-btn').classList.add('hidden');
-                console.log("Current User Tier:", currentUser.tier);
                 syncToAWS();
             } catch (e) {
                 currentUser = null;
