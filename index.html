@@ -19,14 +19,14 @@
             const { Amplify } = aws_amplify_core;
             const { Auth } = aws_amplify_auth;
 
-            const amplifyConfig = {
+            Amplify.configure({
                 Auth: {
                     region: 'us-east-1',
                     userPoolId: 'us-east-1_c9WukUWbT',
                     userPoolWebClientId: '4dbcdjlba00o0otqnr29ul2rev',
+                    oauth: {}
                 }
-            };
-            Amplify.configure(amplifyConfig);
+            });
             window.aws_amplify = { Amplify, Auth };
         } else {
             console.error('MaintenanceVault: AWS Amplify libraries (Auth/Core) failed to load from CDN.');
@@ -722,17 +722,6 @@
 
             let formHTML = '';
 
-            const googleSSOButton = `
-                <button type="button" id="google-sso-btn" onclick="handleGoogleSignIn()" class="w-full bg-white hover:bg-gray-100 text-gray-900 font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3 mb-2 border border-gray-300">
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5" alt="Google logo">
-                    <span>Continue with Google</span>
-                </button>
-                <div class="flex items-center gap-4 my-4">
-                    <div class="flex-1 h-px bg-gray-700"></div>
-                    <span class="text-[10px] text-gray-500 font-bold uppercase">Or</span>
-                    <div class="flex-1 h-px bg-gray-700"></div>
-                </div>`;
-
             const emailField = (email = '', readonly = false) => `
                 <div>
                     <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Email Address</label>
@@ -773,11 +762,11 @@
             if (mode === 'signin') {
                 tabSignin.classList.add('text-yellow-500', 'border-b-2', 'border-yellow-500');
                 tabSignup.classList.add('text-gray-500', 'hover:text-gray-300');
-                formHTML = googleSSOButton + emailField(currentEmail) + passwordField() + submitButton('SIGN IN');
+                formHTML = emailField(currentEmail) + passwordField() + submitButton('SIGN IN');
             } else if (mode === 'signup') {
                 tabSignup.classList.add('text-yellow-500', 'border-b-2', 'border-yellow-500');
                 tabSignin.classList.add('text-gray-500', 'hover:text-gray-300');
-                formHTML = googleSSOButton + emailField(currentEmail) + passwordField('Password', 'auth-password', 'new-password') + passwordField('Confirm Password', 'auth-confirm-password', 'new-password') + submitButton('CREATE ACCOUNT');
+                formHTML = emailField(currentEmail) + passwordField('Password', 'auth-password', 'new-password') + passwordField('Confirm Password', 'auth-confirm-password', 'new-password') + submitButton('CREATE ACCOUNT');
             } else if (mode === 'confirm') {
                 authTabs.classList.add('hidden');
                 verifyHeader.classList.remove('hidden');
@@ -793,25 +782,6 @@
             }
 
             authForm.innerHTML = formHTML;
-        }
-
-        async function handleGoogleSignIn() {
-            const btn = document.getElementById('google-sso-btn');
-            const originalHTML = btn ? btn.innerHTML : '';
-            try {
-                if (btn) {
-                    btn.disabled = true;
-                    btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Redirecting...`;
-                }
-                await aws_amplify.Auth.federatedSignIn({ provider: 'Google' });
-            } catch (error) {
-                console.error("Google Sign In Error:", error);
-                showAuthStatus(error.message || "An error occurred during Google Sign In");
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = originalHTML;
-                }
-            }
         }
 
         async function handleAuthSubmit(event) {
