@@ -179,53 +179,52 @@
     <!-- Auth Modal -->
     <!-- Paywall Modal -->
     <div id="paywall-modal" class="hidden fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-gray-800 w-full max-w-md rounded-2xl border border-blue-500/30 shadow-2xl overflow-hidden animate-fade-in">
-            <div class="p-6 border-b border-gray-700 flex justify-between items-center bg-gradient-to-r from-blue-900/20 to-transparent">
-                <h2 class="text-xl font-bold text-white tracking-tight flex items-center">
-                    <i class="fas fa-crown text-yellow-500 mr-2"></i>Upgrade to Premium
-                </h2>
-                <button onclick="togglePaywall()" class="text-gray-500 hover:text-white transition-colors"><i class="fas fa-times text-lg"></i></button>
+        <div class="bg-gray-800 w-full max-w-5xl rounded-2xl border border-blue-500/30 shadow-2xl overflow-hidden animate-fade-in relative">
+            <button onclick="togglePaywall()" class="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors z-10"><i class="fas fa-times text-xl"></i></button>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-700">
+                <!-- Free Tier -->
+                <div class="p-8 flex flex-col">
+                    <h3 class="text-gray-400 uppercase text-xs font-bold tracking-widest mb-2">Free</h3>
+                    <div class="text-4xl font-bold text-white mb-6">$0</div>
+                    <ul class="space-y-4 text-sm text-gray-400 mb-8 flex-grow">
+                        <li class="flex items-center gap-3"><i class="fas fa-check text-blue-500"></i>Up to 5 Assets</li>
+                        <li class="flex items-center gap-3"><i class="fas fa-check text-blue-500"></i>Offline LocalStorage</li>
+                        <li class="flex items-center gap-3"><i class="fas fa-check text-blue-500"></i>Basic Circular Economy Score</li>
+                    </ul>
+                    <button id="paywall-free-btn" disabled class="w-full py-3 px-4 rounded-xl font-bold transition-all bg-gray-700 text-gray-500 cursor-not-allowed uppercase text-[10px] tracking-widest">Current Plan</button>
+                </div>
+
+                <!-- Pro Tier (Recommended) -->
+                <div class="p-8 flex flex-col bg-blue-900/10 border-x-0 md:border-x border-blue-500/50 relative">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-tighter shadow-lg">Recommended</div>
+                    <h3 class="text-blue-400 uppercase text-xs font-bold tracking-widest mb-2">Pro</h3>
+                    <div class="text-4xl font-bold text-white mb-1">$49.99<span class="text-sm font-normal text-gray-500 ml-1">/ yr</span></div>
+                    <p class="text-[10px] text-gray-500 mb-6 italic">Best for Individuals</p>
+                    <ul class="space-y-4 text-sm text-gray-300 mb-8 flex-grow">
+                        <li class="flex items-center gap-3 font-semibold text-blue-100"><i class="fas fa-check text-blue-400"></i>Unlimited Assets</li>
+                        <li class="flex items-center gap-3 font-semibold text-blue-100"><i class="fas fa-check text-blue-400"></i>AWS Cloud Sync (Multi-device)</li>
+                        <li class="flex items-center gap-3 font-semibold text-blue-100"><i class="fas fa-check text-blue-400"></i>PDF Exporting</li>
+                    </ul>
+                    <button id="paywall-pro-btn" onclick="handleUpgrade()" class="w-full py-4 px-4 rounded-xl font-bold transition-all bg-blue-600 hover:bg-blue-500 text-white shadow-lg active:scale-95 uppercase text-[10px] tracking-widest">Upgrade to Pro</button>
+                </div>
+
+                <!-- ProCom Tier -->
+                <div class="p-8 flex flex-col">
+                    <h3 class="text-yellow-500 uppercase text-xs font-bold tracking-widest mb-2">ProCom</h3>
+                    <div class="text-4xl font-bold text-white mb-1">$15<span class="text-sm font-normal text-gray-500 ml-1">/ seat / mo</span></div>
+                    <p class="text-[10px] text-gray-500 mb-6 italic">For Fleets & Crews</p>
+                    <ul class="space-y-4 text-sm text-gray-400 mb-8 flex-grow">
+                        <li class="flex items-center gap-3"><i class="fas fa-check text-yellow-600"></i>QR Code Engine Hours</li>
+                        <li class="flex items-center gap-3"><i class="fas fa-check text-yellow-600"></i>Real-time Triage Dashboard</li>
+                        <li class="flex items-center gap-3"><i class="fas fa-check text-yellow-600"></i>Role-Based Team Dispatch</li>
+                    </ul>
+                    <button id="paywall-procom-btn" onclick="joinProComWaitlist()" class="w-full py-3 px-4 rounded-xl font-bold transition-all border-2 border-yellow-600 text-yellow-500 hover:bg-yellow-600 hover:text-white uppercase text-[10px] tracking-widest text-center">Join the Waitlist</button>
+                </div>
             </div>
 
-            <div class="p-6 space-y-6">
-                <div class="space-y-4">
-                    <div class="flex items-start gap-4">
-                        <div class="bg-blue-900/40 p-2 rounded-lg text-blue-400"><i class="fas fa-cloud-upload-alt w-5 text-center"></i></div>
-                        <div>
-                            <h4 class="text-white font-bold text-sm">Unlimited Cloud Sync</h4>
-                            <p class="text-xs text-gray-400">Access your maintenance logs from any device, anytime.</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-4">
-                        <div class="bg-blue-900/40 p-2 rounded-lg text-blue-400"><i class="fas fa-infinity w-5 text-center"></i></div>
-                        <div>
-                            <h4 class="text-white font-bold text-sm">Unlimited Assets</h4>
-                            <p class="text-xs text-gray-400">Track as many vehicles, properties, or tools as you need.</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-4">
-                        <div class="bg-blue-900/40 p-2 rounded-lg text-blue-400"><i class="fas fa-file-pdf w-5 text-center"></i></div>
-                        <div>
-                            <h4 class="text-white font-bold text-sm">PDF Service Reports</h4>
-                            <p class="text-xs text-gray-400">Generate professional reports for resale or insurance.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-gray-900 p-4 rounded-xl border border-gray-700">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-xs text-gray-400 uppercase font-bold tracking-wider">Premium Access</span>
-                        <span class="text-lg font-bold text-white">$4.99 / year</span>
-                    </div>
-                    <p class="text-[10px] text-gray-500 italic">One low price for total peace of mind and data security.</p>
-                </div>
-
-                <button onclick="handleUpgrade()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3">
-                    <i class="fas fa-bolt"></i>
-                    <span>ACTIVATE PREMIUM NOW</span>
-                </button>
-
-                <p class="text-[9px] text-center text-gray-600 uppercase tracking-widest font-bold">Secure Checkout via Stripe or Google Play</p>
+            <div class="p-4 bg-gray-900/50 text-center border-t border-gray-700">
+                <p class="text-[9px] text-gray-500 uppercase tracking-widest font-bold">Secure Checkout via RevenueCat & Stripe</p>
             </div>
         </div>
     </div>
@@ -327,8 +326,8 @@
             if(!name) return alert("Item Name is required");
 
             // Freemium Phase 1: 5-asset limit for Free tier
-            const isPremium = currentUser && currentUser.tier === 'Premium';
-            if (!isPremium && vaultData.length >= 5) {
+            const isPro = currentUser && currentUser.tier === 'Pro';
+            if (!isPro && vaultData.length >= 5) {
                 togglePaywall();
                 return;
             }
@@ -357,7 +356,7 @@
         }
 
         async function syncToAWS() {
-            if (!currentUser || currentUser.tier !== 'Premium') return;
+            if (!currentUser || currentUser.tier !== 'Pro') return;
 
             const indicator = document.getElementById('sync-indicator');
             indicator.classList.remove('hidden', 'text-gray-600', 'text-red-500');
@@ -807,7 +806,7 @@
             try {
                 const customerInfo = await Purchases.Purchases.getCustomerInfo();
                 if (customerInfo.entitlements.active['Premium']) {
-                    currentUser.tier = 'Premium';
+                    currentUser.tier = 'Pro';
                 } else {
                     currentUser.tier = 'Free';
                 }
@@ -815,6 +814,10 @@
             } catch (e) {
                 console.error("RevenueCat Error:", e);
             }
+        }
+
+        function joinProComWaitlist() {
+            window.location.href = "mailto:support@maintenancevault.com?subject=ProCom Waitlist Interest&body=I am interested in the ProCom tier for fleets and crews. Please notify me when it's available.";
         }
 
         function togglePaywall() {
@@ -825,6 +828,31 @@
             }
             const modal = document.getElementById('paywall-modal');
             modal.classList.toggle('hidden');
+
+            if (!modal.classList.contains('hidden')) {
+                const freeBtn = document.getElementById('paywall-free-btn');
+                const proBtn = document.getElementById('paywall-pro-btn');
+                const tier = currentUser.tier || 'Free';
+
+                // Reset states
+                freeBtn.disabled = false;
+                freeBtn.innerText = "Switch to Free";
+                freeBtn.className = "w-full py-3 px-4 rounded-xl font-bold transition-all bg-gray-700 text-white hover:bg-gray-600 uppercase text-[10px] tracking-widest";
+
+                proBtn.disabled = false;
+                proBtn.innerText = "Upgrade to Pro";
+                proBtn.className = "w-full py-4 px-4 rounded-xl font-bold transition-all bg-blue-600 hover:bg-blue-500 text-white shadow-lg active:scale-95 uppercase text-[10px] tracking-widest";
+
+                if (tier === 'Free') {
+                    freeBtn.disabled = true;
+                    freeBtn.innerText = "Current Plan";
+                    freeBtn.className = "w-full py-3 px-4 rounded-xl font-bold transition-all bg-gray-700 text-gray-500 cursor-not-allowed uppercase text-[10px] tracking-widest";
+                } else if (tier === 'Pro') {
+                    proBtn.disabled = true;
+                    proBtn.innerText = "Current Plan";
+                    proBtn.className = "w-full py-4 px-4 rounded-xl font-bold transition-all bg-blue-900/50 text-blue-400 cursor-not-allowed uppercase text-[10px] tracking-widest";
+                }
+            }
         }
 
         async function handleUpgrade() {
@@ -834,16 +862,16 @@
                 if (isAndroidTWA && 'getDigitalGoodsService' in window) {
                     // Google Play Billing via Digital Goods API
                     const service = await window.getDigitalGoodsService('https://play.google.com/billing');
-                    const details = await service.getDetails(['premium_subscription']);
+                    const details = await service.getDetails(['pro_subscription']);
 
                     const paymentMethods = [{
                         supportedMethods: 'https://play.google.com/billing',
-                        data: { sku: 'premium_subscription' }
+                        data: { sku: 'pro_subscription' }
                     }];
                     const paymentDetails = {
                         total: {
                             label: 'Total',
-                            amount: { currency: 'USD', value: '4.99' }
+                            amount: { currency: 'USD', value: '49.99' }
                         }
                     };
 
@@ -866,8 +894,8 @@
                 }
 
                 await updateTierFromRevenueCat();
-                if (currentUser.tier === 'Premium') {
-                    alert("Welcome to Premium! Your sync features are now active.");
+                if (currentUser.tier === 'Pro') {
+                    alert("Welcome to Pro! Your sync features are now active.");
                     togglePaywall();
                 }
             } catch (error) {
