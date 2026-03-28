@@ -4,25 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MaintenanceVault</title>
+    <script src="https://cdn.amplify.aws/packages/core/5.0.5/aws-amplify-core.min.js"></script>
+    <script src="https://cdn.amplify.aws/packages/auth/5.0.5/aws-amplify-auth.min.js"></script>
     
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icon-192.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- AWS Amplify for Auth (Loaded via ESM) -->
-    <script type="module">
-        import { Amplify, Auth } from 'https://esm.sh/aws-amplify@5.3.11';
+    <!-- AWS Amplify for Auth -->
+    <script>
+        // Check for libraries from the AWS Amplify CDN
+        // Note: These libraries export to global names aws_amplify_core and aws_amplify_auth
+        if (typeof aws_amplify_core !== 'undefined' && typeof aws_amplify_auth !== 'undefined') {
+            const { Amplify } = aws_amplify_core;
+            const { Auth } = aws_amplify_auth;
 
-        const amplifyConfig = {
-            Auth: {
-                region: 'us-east-1',
-                userPoolId: 'us-east-1_c9WukUWbT',
-                userPoolWebClientId: '4dbcdjlba00o0otqnr29ul2rev',
-            }
-        };
-
-        Amplify.configure(amplifyConfig);
-        window.aws_amplify = { Amplify, Auth };
+            const amplifyConfig = {
+                Auth: {
+                    region: 'us-east-1',
+                    userPoolId: 'us-east-1_c9WukUWbT',
+                    userPoolWebClientId: '4dbcdjlba00o0otqnr29ul2rev',
+                }
+            };
+            Amplify.configure(amplifyConfig);
+            window.aws_amplify = { Amplify, Auth };
+        } else {
+            console.error('MaintenanceVault: AWS Amplify libraries (Auth/Core) failed to load from CDN.');
+        }
     </script>
     <!-- RevenueCat Web SDK -->
     <script src="https://unpkg.com/@revenuecat/purchases-js@1.29.0/dist/Purchases.umd.js"></script>
