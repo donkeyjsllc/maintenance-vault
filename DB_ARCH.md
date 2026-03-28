@@ -24,7 +24,7 @@ To support scalable, multi-user storage with offline-first capabilities, the fol
 | Attribute | Type | Description |
 | :--- | :--- | :--- |
 | `userId` | String (PK) | The Cognito `sub` (UUID) of the authenticated user. |
-| `tier` | String | "Free" or "Premium". |
+| `tier` | String | "Free" or "Pro". |
 | `updatedAt` | String | Last modified timestamp (ISO 8601). |
 
 ### Why this PK/SK?

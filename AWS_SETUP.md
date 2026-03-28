@@ -19,7 +19,7 @@ To set up the authentication layer for MaintenanceVault, follow these steps in t
      - Name: `tier`
      - Type: `String`
      - Min length: `1`, Max length: `20`
-     - Mutable: **Checked** (allows upgrading to Premium later).
+     - Mutable: **Checked** (allows upgrading to Pro later).
    - Click **Next**.
 6. **Configure message delivery**:
    - Select "Send email with Cognito" for testing (limit 50 emails/day) or use Amazon SES for production.

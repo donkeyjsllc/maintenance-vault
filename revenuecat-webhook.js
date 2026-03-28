@@ -47,7 +47,7 @@ exports.handler = async (event) => {
                 UserPoolId: USER_POOL_ID,
                 Username: userId,
                 UserAttributes: [
-                    { Name: "custom:tier", Value: "Premium" }
+                    { Name: "custom:tier", Value: "Pro" }
                 ]
             }));
 
@@ -56,12 +56,12 @@ exports.handler = async (event) => {
                 TableName: USERS_TABLE_NAME,
                 Item: {
                     userId: userId,
-                    tier: "Premium",
+                    tier: "Pro",
                     updatedAt: new Date().toISOString()
                 }
             }));
 
-            console.log(`User ${userId} upgraded to Premium`);
+            console.log(`User ${userId} upgraded to Pro`);
 
         } catch (error) {
             console.error("Error updating user tier:", error);
