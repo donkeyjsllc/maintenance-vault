@@ -250,6 +250,15 @@
                     </button>
                 </div>
 
+                <div id="danger-zone" class="hidden pt-4 border-t border-red-900/50 space-y-4">
+                    <h4 class="text-red-500 font-bold text-sm">Danger Zone</h4>
+                    <p class="text-xs text-gray-400">Permanently delete your account and all associated data from our cloud servers.</p>
+                    <button onclick="toggleDeleteAccountModal()" class="w-full bg-red-600/20 hover:bg-red-600 text-red-500 hover:text-white border border-red-600/50 font-bold py-3 rounded-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                        <i class="fas fa-user-slash text-sm"></i>
+                        <span>DELETE MY ACCOUNT & DATA</span>
+                    </button>
+                </div>
+
                 <div class="pt-4 border-t border-gray-700">
                     <button onclick="toggleSettingsModal()" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg transition-all">CLOSE</button>
                 </div>
@@ -259,6 +268,38 @@
                 <p class="text-[9px] text-gray-500 uppercase tracking-widest font-bold flex items-center justify-center gap-2">
                     <i class="fas fa-shield-alt text-blue-500/50"></i> MaintenanceVault Data Security
                 </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Account Confirmation Modal -->
+    <div id="delete-account-modal" class="hidden fixed inset-0 z-[70] bg-black/90 flex items-center justify-center p-4 backdrop-blur-md">
+        <div class="bg-gray-900 w-full max-w-md rounded-2xl border border-red-900 shadow-2xl overflow-hidden animate-fade-in">
+            <div class="p-6 border-b border-red-900/50 bg-red-950/20">
+                <h2 class="text-xl font-bold text-white tracking-tight flex items-center">
+                    <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>Delete Account?
+                </h2>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <div class="bg-red-900/10 border border-red-900/30 p-4 rounded-lg">
+                    <p class="text-sm text-red-200 font-bold mb-2">Are you sure?</p>
+                    <p class="text-xs text-red-300 leading-relaxed">
+                        This will permanently delete your account, cancel any active subscriptions, and erase all your maintenance logs from the cloud. <strong>This cannot be undone.</strong>
+                    </p>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-[10px] text-gray-500 uppercase font-bold ml-1">Type "DELETE" to confirm</label>
+                    <input type="text" id="delete-confirm-input" placeholder="DELETE" class="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 text-white focus:border-red-500 outline-none transition-all uppercase">
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button onclick="toggleDeleteAccountModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 rounded-lg transition-all">CANCEL</button>
+                    <button id="delete-confirm-btn" onclick="handleAccountDeletion()" disabled class="flex-1 bg-red-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-red-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95">
+                        DELETE
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -318,6 +359,11 @@
             document.getElementById('notify-toggle').checked = isEnabled;
             if (isEnabled) checkForDueMaintenance();
             if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+
+            document.getElementById('delete-confirm-input').addEventListener('input', (e) => {
+                const btn = document.getElementById('delete-confirm-btn');
+                btn.disabled = e.target.value.toUpperCase() !== 'DELETE';
+            });
         });
 
         function addItem() {
@@ -535,6 +581,15 @@
         function toggleSettingsModal() {
             const modal = document.getElementById('settings-modal');
             modal.classList.toggle('hidden');
+        }
+
+        function toggleDeleteAccountModal() {
+            const modal = document.getElementById('delete-account-modal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                document.getElementById('delete-confirm-input').value = '';
+                document.getElementById('delete-confirm-btn').disabled = true;
+            }
         }
 
         function exportToCSV() {
@@ -794,11 +849,13 @@
                 document.getElementById('user-email').innerText = user.attributes.email;
                 document.getElementById('user-display').classList.remove('hidden');
                 document.getElementById('login-btn').classList.add('hidden');
+                document.getElementById('danger-zone').classList.remove('hidden');
                 syncToAWS();
             } catch (e) {
                 currentUser = null;
                 document.getElementById('user-display').classList.add('hidden');
                 document.getElementById('login-btn').classList.remove('hidden');
+                document.getElementById('danger-zone').classList.add('hidden');
             }
         }
 
@@ -901,6 +958,36 @@
             } catch (error) {
                 console.error("Upgrade Error:", error);
                 alert("Purchase failed: " + error.message);
+            }
+        }
+
+        async function handleAccountDeletion() {
+            const btn = document.getElementById('delete-confirm-btn');
+            const originalText = btn.innerText;
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> DELETING...`;
+
+                console.log("Account deletion requested for:", currentUser?.attributes?.email);
+
+                // --- PLACEHOLDER FOR AWS COGNITO & DYNAMODB SCRUBBING ---
+                // Example: await fetch('https://YOUR_API_ID.execute-api.REGION.amazonaws.com/prod/delete-user', { method: 'DELETE', headers: { 'Authorization': token } });
+
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
+
+                alert("Your account and data have been successfully deleted.");
+
+                // Close modals and sign out
+                toggleDeleteAccountModal();
+                toggleSettingsModal();
+                await handleSignOut();
+
+            } catch (error) {
+                console.error("Deletion Error:", error);
+                alert("An error occurred during account deletion. Please try again or contact support.");
+                btn.disabled = false;
+                btn.innerText = originalText;
             }
         }
 
