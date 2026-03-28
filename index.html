@@ -93,7 +93,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs text-gray-500 uppercase mb-1">Asset Name</label>
-                    <input type="text" id="itemAssetName" placeholder="e.g. Silverado, Home, etc." class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none transition-colors">
+                    <input type="text" id="itemAssetName" placeholder="e.g. Work Truck, HVAC, Property" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none transition-colors">
                 </div>
 
                 <div>
@@ -272,6 +272,24 @@
         </div>
     </div>
 
+    <!-- Delete Item Confirmation Modal -->
+    <div id="delete-item-modal" class="hidden fixed inset-0 z-[70] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-blue-950 w-full max-w-sm rounded-2xl border border-gray-700 shadow-2xl overflow-hidden animate-fade-in">
+            <div class="p-6 text-center">
+                <div class="w-16 h-16 bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-900/30">
+                    <i class="fas fa-trash-alt text-red-500 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Delete Log?</h3>
+                <p class="text-sm text-gray-400 mb-6">Are you sure you want to remove this maintenance record? This action cannot be undone.</p>
+
+                <div class="flex gap-3">
+                    <button onclick="toggleDeleteItemModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg transition-all">CANCEL</button>
+                    <button onclick="confirmDeleteItem()" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95">DELETE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Delete Account Confirmation Modal -->
     <div id="delete-account-modal" class="hidden fixed inset-0 z-[70] bg-black/90 flex items-center justify-center p-4 backdrop-blur-md">
         <div class="bg-gray-900 w-full max-w-md rounded-2xl border border-red-900 shadow-2xl overflow-hidden animate-fade-in">
@@ -350,6 +368,7 @@
         let currentTab = 'vehicle';
         let currentUser = null;
         let authMode = 'signin'; // 'signin', 'signup', 'confirm'
+        let itemToDelete = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
             renderVault();
@@ -503,12 +522,26 @@
         }
 
         function deleteItem(itemId) {
-            if(confirm("Delete this log permanently?")) {
-                vaultData = vaultData.filter(item => item.itemId !== itemId);
+            itemToDelete = itemId;
+            toggleDeleteItemModal();
+        }
+
+        function toggleDeleteItemModal() {
+            const modal = document.getElementById('delete-item-modal');
+            modal.classList.toggle('hidden');
+            if (modal.classList.contains('hidden')) {
+                itemToDelete = null;
+            }
+        }
+
+        function confirmDeleteItem() {
+            if (itemToDelete) {
+                vaultData = vaultData.filter(item => item.itemId !== itemToDelete);
                 localStorage.setItem('sustainVault', JSON.stringify(vaultData));
                 renderVault();
                 updateStats();
                 syncToAWS();
+                toggleDeleteItemModal();
             }
         }
 
@@ -968,8 +1001,6 @@
             try {
                 btn.disabled = true;
                 btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> DELETING...`;
-
-                console.log("Account deletion requested for:", currentUser?.attributes?.email);
 
                 // --- PLACEHOLDER FOR AWS COGNITO & DYNAMODB SCRUBBING ---
                 // Example: await fetch('https://YOUR_API_ID.execute-api.REGION.amazonaws.com/prod/delete-user', { method: 'DELETE', headers: { 'Authorization': token } });
