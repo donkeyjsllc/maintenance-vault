@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MaintenanceVault</title>
-    <script src="https://cdn.amplify.aws/packages/core/5.0.5/aws-amplify-core.min.js"></script>
-    <script src="https://cdn.amplify.aws/packages/auth/5.0.5/aws-amplify-auth.min.js"></script>
-    
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icon-192.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- AWS Amplify for Auth -->
+  
+    <!-- AWS Amplify SDK -->
+    <script src="https://cdn.amplify.aws/packages/core/5.0.5/aws-amplify-core.min.js"></script>
+    <script src="https://cdn.amplify.aws/packages/auth/5.0.5/aws-amplify-auth.min.js"></script>
     <script>
         // Check for libraries from the AWS Amplify CDN
         // Note: These libraries export to global names aws_amplify_core and aws_amplify_auth
@@ -29,7 +29,7 @@
             });
             window.aws_amplify = { Amplify, Auth };
         } else {
-            console.error('MaintenanceVault: AWS Amplify libraries (Auth/Core) failed to load from CDN.');
+            console.error("Amplify library not found. Please verify the CDN URLs.");
         }
     </script>
     <!-- RevenueCat Web SDK -->
@@ -65,9 +65,9 @@
                 <div id="user-display" class="hidden text-[10px] text-blue-400 font-bold mb-1 flex items-center gap-2">
                     <i id="sync-indicator" class="fas fa-cloud text-gray-600 hidden" title="Cloud Sync Active"></i>
                     <span id="user-email"></span>
-                    <button onclick="handleSignOut()" class="text-gray-500 hover:text-white"><i class="fas fa-sign-out-alt"></i></button>
+                    <button id="sign-out-btn" onclick="handleSignOut()" class="text-gray-500 hover:text-white"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
-                <button id="login-btn" onclick="toggleAuthModal()" class="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded mb-1 transition-all">SIGN IN / JOIN</button>
+                <button id="login-btn" onclick="switchAuthMode('signin')" class="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded mb-1 transition-all">SIGN IN / JOIN</button>
 
                 <div class="text-[10px] text-gray-400 uppercase mb-1">CO2 Avoided: <span id="co2-stat" class="text-green-400 font-bold">0 kg</span></div>
                 <label class="inline-flex items-center cursor-pointer">
@@ -78,7 +78,7 @@
             </div>
         </div>
         
-        <div class="flex max-w-4xl mx-auto px-4 mt-2 gap-6 text-sm font-semibold text-gray-500">
+        <div id="nav-tabs" class="hidden flex max-w-4xl mx-auto px-4 mt-2 gap-6 text-sm font-semibold text-gray-500">
             <button onclick="switchTab('vehicle')" id="tab-vehicle" class="pb-2 tab-active transition-colors">
                 <i class="fas fa-truck-pickup mr-1"></i> VEHICLE
             </button>
@@ -93,7 +93,8 @@
 
     <main class="max-w-4xl mx-auto p-4 flex-grow w-full">
 
-        <div id="input-form" class="hidden bg-gray-800 rounded-xl p-5 mb-6 border border-gray-700 shadow-xl animate-fade-in">
+        <div id="dashboard" class="hidden">
+            <div id="input-form" class="hidden bg-gray-800 rounded-xl p-5 mb-6 border border-gray-700 shadow-xl animate-fade-in">
             <h2 class="text-white font-bold mb-4 flex items-center">
                 <i class="fas fa-plus-circle text-blue-500 mr-2"></i> Log Maintenance
             </h2>
@@ -169,6 +170,40 @@
                 <div class="text-right text-xs text-green-400 font-mono font-bold uppercase tracking-wide" id="impact-percent">0% Circular Economy Score</div>
             </div>
         </div>
+
+        <div id="auth-section" class="hidden max-w-md mx-auto mt-10">
+            <div class="bg-blue-950 w-full rounded-2xl border border-gray-700 shadow-2xl overflow-hidden animate-fade-in">
+                <div id="auth-tabs" class="flex border-b border-gray-700">
+                    <button id="auth-tab-signin" onclick="switchAuthMode('signin')" class="flex-1 py-4 text-xs font-bold uppercase tracking-widest text-yellow-500 border-b-2 border-yellow-500 transition-all">Sign In</button>
+                    <button id="auth-tab-signup" onclick="switchAuthMode('signup')" class="flex-1 py-4 text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-gray-300 transition-all">Sign Up</button>
+                </div>
+
+                <div id="verify-header" class="hidden p-6 border-b border-gray-700 flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-white tracking-tight flex items-center">
+                        <i class="fas fa-check-circle text-yellow-500 mr-2"></i>Verify Email
+                    </h2>
+                </div>
+
+                <div id="recovery-header" class="hidden p-6 border-b border-gray-700 flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-white tracking-tight flex items-center">
+                        <i class="fas fa-key text-yellow-500 mr-2"></i>Reset Password
+                    </h2>
+                </div>
+
+                <div class="p-6">
+                    <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                        <!-- Dynamic content injected via switchAuthMode() -->
+                    </form>
+                    <div id="auth-status-msg" class="mt-4 p-3 rounded text-xs text-center hidden"></div>
+                </div>
+
+                <div class="p-4 bg-gray-900/50 text-center">
+                    <p class="text-[9px] text-gray-500 uppercase tracking-widest font-bold flex items-center justify-center gap-2">
+                        <i class="fas fa-shield-alt text-blue-500/50"></i> MaintenanceVault Secure Cloud
+                    </p>
+                </div>
+            </div>
+        </div>
     </main>
 
     <footer class="max-w-4xl mx-auto w-full p-6 border-t border-gray-800 text-center pb-24">
@@ -180,7 +215,7 @@
         </p>
     </footer>
 
-    <button onclick="toggleForm()" class="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-500 text-white w-14 h-14 rounded-full shadow-2xl z-50 flex items-center justify-center transition-transform active:scale-90">
+    <button id="add-item-btn" onclick="toggleForm()" class="hidden fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-500 text-white w-14 h-14 rounded-full shadow-2xl z-50 flex items-center justify-center transition-transform active:scale-90">
         <i class="fas fa-plus text-xl"></i>
     </button>
 
@@ -330,44 +365,6 @@
         </div>
     </div>
 
-    <div id="auth-modal" class="hidden fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-blue-950 w-full max-w-md rounded-2xl border border-gray-700 shadow-2xl overflow-hidden animate-fade-in">
-            <div id="auth-tabs" class="flex border-b border-gray-700">
-                <button id="auth-tab-signin" onclick="switchAuthMode('signin')" class="flex-1 py-4 text-xs font-bold uppercase tracking-widest text-yellow-500 border-b-2 border-yellow-500 transition-all">Sign In</button>
-                <button id="auth-tab-signup" onclick="switchAuthMode('signup')" class="flex-1 py-4 text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-gray-300 transition-all">Sign Up</button>
-                <button onclick="toggleAuthModal()" class="px-6 text-gray-500 hover:text-white transition-colors border-l border-gray-700"><i class="fas fa-times text-lg"></i></button>
-            </div>
-
-            <div id="verify-header" class="hidden p-6 border-b border-gray-700 flex justify-between items-center">
-                <h2 class="text-xl font-bold text-white tracking-tight flex items-center">
-                    <i class="fas fa-check-circle text-yellow-500 mr-2"></i>Verify Email
-                </h2>
-                <button onclick="toggleAuthModal()" class="text-gray-500 hover:text-white transition-colors"><i class="fas fa-times text-lg"></i></button>
-            </div>
-
-            <div id="recovery-header" class="hidden p-6 border-b border-gray-700 flex justify-between items-center">
-                <h2 class="text-xl font-bold text-white tracking-tight flex items-center">
-                    <i class="fas fa-key text-yellow-500 mr-2"></i>Reset Password
-                </h2>
-                <button onclick="toggleAuthModal()" class="text-gray-500 hover:text-white transition-colors"><i class="fas fa-times text-lg"></i></button>
-            </div>
-
-            <div class="p-6">
-                <!-- Sign In / Up Form -->
-                <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
-                    <!-- Dynamic content injected via switchAuthMode() -->
-                </form>
-
-                <div id="auth-status-msg" class="mt-4 p-3 rounded text-xs text-center hidden"></div>
-            </div>
-
-            <div class="p-4 bg-gray-900/50 text-center">
-                <p class="text-[9px] text-gray-500 uppercase tracking-widest font-bold flex items-center justify-center gap-2">
-                    <i class="fas fa-shield-alt text-blue-500/50"></i> MaintenanceVault Secure Cloud
-                </p>
-            </div>
-        </div>
-    </div>
 
     <script>
         const REVENUECAT_PUBLIC_API_KEY = 'YOUR_REVENUECAT_PUBLIC_API_KEY';
@@ -379,9 +376,7 @@
         let itemToDelete = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
-            renderVault();
-            updateStats();
-            await checkUserSession();
+            await checkAuthState();
             const isEnabled = localStorage.getItem('notificationsEnabled') === 'true';
             document.getElementById('notify-toggle').checked = isEnabled;
             if (isEnabled) checkForDueMaintenance();
@@ -680,14 +675,6 @@
             }
         }
 
-        function toggleAuthModal() {
-            const modal = document.getElementById('auth-modal');
-            modal.classList.toggle('hidden');
-            if (!modal.classList.contains('hidden')) {
-                switchAuthMode('signin');
-            }
-            clearAuthStatus();
-        }
 
         function clearAuthStatus() {
             const statusMsg = document.getElementById('auth-status-msg');
@@ -799,8 +786,7 @@
                     if (!password) return showAuthStatus("Password is required");
                     const user = await aws_amplify.Auth.signIn(email, password);
                     console.log("Logged in:", user);
-                    await checkUserSession();
-                    toggleAuthModal();
+                    await checkAuthState();
                 }
                 else if (authMode === 'signup') {
                     if (!password) return showAuthStatus("Password is required");
@@ -811,6 +797,7 @@
                         password,
                         attributes: {
                             email,
+                            'name': 'Test User',
                             'custom:tier': 'Free'
                         }
                     });
@@ -843,30 +830,63 @@
             }
         }
 
-        async function checkUserSession() {
+        async function checkAuthState() {
             try {
                 const user = await aws_amplify.Auth.currentAuthenticatedUser();
                 currentUser = user;
                 const attributes = await aws_amplify.Auth.userAttributes(user);
                 const tierAttr = attributes.find(a => a.Name === 'custom:tier');
+                const emailAttr = attributes.find(a => a.Name === 'email');
                 currentUser.tier = tierAttr ? tierAttr.Value : 'Free';
 
                 // Configure RevenueCat with Cognito sub
-                if (typeof Purchases !== 'undefined') {
+                if (typeof Purchases !== 'undefined' && user.attributes && user.attributes.sub) {
                     Purchases.Purchases.configure(REVENUECAT_PUBLIC_API_KEY, user.attributes.sub);
                     await updateTierFromRevenueCat();
                 }
 
-                document.getElementById('user-email').innerText = user.attributes.email;
-                document.getElementById('user-display').classList.remove('hidden');
-                document.getElementById('login-btn').classList.add('hidden');
-                document.getElementById('danger-zone').classList.remove('hidden');
+                const userEmailElem = document.getElementById('user-email');
+                if (userEmailElem) {
+                    userEmailElem.innerText = emailAttr ? emailAttr.Value : (user.attributes ? user.attributes.email : '');
+                }
+
+                // Show App UI
+                const showElements = ['dashboard', 'nav-tabs', 'add-item-btn', 'user-display', 'danger-zone'];
+                showElements.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.remove('hidden');
+                });
+
+                // Hide Auth UI
+                const hideElements = ['auth-section', 'login-btn'];
+                hideElements.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('hidden');
+                });
+
+                renderVault();
+                updateStats();
                 syncToAWS();
             } catch (e) {
                 currentUser = null;
-                document.getElementById('user-display').classList.add('hidden');
-                document.getElementById('login-btn').classList.remove('hidden');
-                document.getElementById('danger-zone').classList.add('hidden');
+
+                // Hide App UI
+                const hideElements = ['dashboard', 'nav-tabs', 'add-item-btn', 'user-display', 'danger-zone'];
+                hideElements.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('hidden');
+                });
+
+                // Show Auth UI
+                const showElements = ['auth-section', 'login-btn'];
+                showElements.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.remove('hidden');
+                });
+
+                switchAuthMode('signin');
+                renderVault();
+                updateStats();
             }
         }
 
@@ -891,7 +911,6 @@
         function togglePaywall() {
             if (!currentUser) {
                 alert("Please sign in first to manage subscriptions.");
-                toggleAuthModal();
                 return;
             }
             const modal = document.getElementById('paywall-modal');
@@ -1003,7 +1022,7 @@
         async function handleSignOut() {
             try {
                 await aws_amplify.Auth.signOut();
-                await checkUserSession();
+                await checkAuthState();
             } catch (error) {
                 console.error("Sign out error:", error);
             }
