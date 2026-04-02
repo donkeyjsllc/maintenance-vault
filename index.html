@@ -10,28 +10,32 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
     <!-- AWS Amplify SDK -->
-    <script src="https://cdn.amplify.aws/packages/core/5.0.5/aws-amplify-core.min.js"></script>
-    <script src="https://cdn.amplify.aws/packages/auth/5.0.5/aws-amplify-auth.min.js"></script>
-    <script>
-        // Check for libraries from the AWS Amplify CDN
-        // Note: These libraries export to global names aws_amplify_core and aws_amplify_auth
-        if (typeof aws_amplify_core !== 'undefined' && typeof aws_amplify_auth !== 'undefined') {
-            const { Amplify } = aws_amplify_core;
-            const { Auth } = aws_amplify_auth;
+   <script type="module">
+    import { Amplify, Auth } from 'https://esm.sh/aws-amplify@5.3.11';
 
-            Amplify.configure({
-                Auth: {
-                    region: 'us-east-1',
-                    userPoolId: 'us-east-1_c9WukUWbT',
-                    userPoolWebClientId: '4dbcdjlba00o0otqnr29ul2rev',
-                    oauth: {}
-                }
-            });
-            window.aws_amplify = { Amplify, Auth };
-        } else {
-            console.error("Amplify library not found. Please verify the CDN URLs.");
+    // 1. Attach to window so the rest of Jules's code (like checkAuthState) can find it
+    window.aws_amplify = {
+        Amplify: Amplify,
+        Auth: Auth
+    };
+
+    // 2. Configure AWS with your exact, verified keys
+    window.aws_amplify.Amplify.configure({
+        Auth: {
+            region: 'us-east-1',
+            userPoolId: 'us-east-1_c9WukUWbT',
+            userPoolWebClientId: '4dbcdjlba00o0otqnr29ul2rev',
+            authenticationFlowType: 'USER_PASSWORD_AUTH'
         }
-    </script>
+    });
+
+    console.log("Amplify loaded and configured successfully via ESM!");
+
+    // 3. Kickstart the UI check now that the engine is actually running
+    if (typeof window.checkAuthState === 'function') {
+        window.checkAuthState();
+    }
+</script>
     <!-- RevenueCat Web SDK -->
     <script src="https://unpkg.com/@revenuecat/purchases-js@1.29.0/dist/Purchases.umd.js"></script>
 
