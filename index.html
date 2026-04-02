@@ -70,7 +70,7 @@
                 <div id="user-display" class="hidden text-[10px] text-blue-400 font-bold mb-1 flex items-center gap-2">
                     <i id="sync-indicator" class="fas fa-cloud text-gray-600 hidden" title="Cloud Sync Active"></i>
                     <span id="user-email"></span>
-                    <button onclick="handleSignOut()" class="text-gray-500 hover:text-white"><i class="fas fa-sign-out-alt"></i></button>
+                    <button id="sign-out-btn" onclick="handleSignOut()" class="text-gray-500 hover:text-white"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
                 <button id="login-btn" onclick="switchAuthMode('signin')" class="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded mb-1 transition-all">SIGN IN / JOIN</button>
 
@@ -98,7 +98,7 @@
 
     <main class="max-w-4xl mx-auto p-4 flex-grow w-full">
 
-        <div id="app-content" class="hidden">
+        <div id="dashboard" class="hidden">
             <div id="input-form" class="hidden bg-gray-800 rounded-xl p-5 mb-6 border border-gray-700 shadow-xl animate-fade-in">
             <h2 class="text-white font-bold mb-4 flex items-center">
                 <i class="fas fa-plus-circle text-blue-500 mr-2"></i> Log Maintenance
@@ -776,25 +776,6 @@
             authForm.innerHTML = formHTML;
         }
 
-        async function handleGoogleSignIn() {
-            const btn = document.getElementById('google-sso-btn');
-            const originalHTML = btn ? btn.innerHTML : '';
-            try {
-                if (btn) {
-                    btn.disabled = true;
-                    btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Redirecting...`;
-                }
-                await aws_amplify.Auth.federatedSignIn({ provider: 'Google' });
-            } catch (error) {
-                console.error("Google Sign In Error:", error);
-                showAuthStatus(error.message || "An error occurred during Google Sign In");
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = originalHTML;
-                }
-            }
-        }
-
         async function handleAuthSubmit(event) {
             if (event) event.preventDefault();
             const formData = new FormData(document.getElementById('auth-form'));
@@ -860,26 +841,33 @@
                 currentUser = user;
                 const attributes = await aws_amplify.Auth.userAttributes(user);
                 const tierAttr = attributes.find(a => a.Name === 'custom:tier');
+                const emailAttr = attributes.find(a => a.Name === 'email');
                 currentUser.tier = tierAttr ? tierAttr.Value : 'Free';
 
                 // Configure RevenueCat with Cognito sub
-                if (typeof Purchases !== 'undefined') {
+                if (typeof Purchases !== 'undefined' && user.attributes && user.attributes.sub) {
                     Purchases.Purchases.configure(REVENUECAT_PUBLIC_API_KEY, user.attributes.sub);
                     await updateTierFromRevenueCat();
                 }
 
-                document.getElementById('user-email').innerText = user.attributes.email;
+                const userEmailElem = document.getElementById('user-email');
+                if (userEmailElem) {
+                    userEmailElem.innerText = emailAttr ? emailAttr.Value : (user.attributes ? user.attributes.email : '');
+                }
 
                 // Show App UI
-                document.getElementById('app-content').classList.remove('hidden');
-                document.getElementById('nav-tabs').classList.remove('hidden');
-                document.getElementById('add-item-btn').classList.remove('hidden');
-                document.getElementById('user-display').classList.remove('hidden');
-                document.getElementById('danger-zone').classList.remove('hidden');
+                const showElements = ['dashboard', 'nav-tabs', 'add-item-btn', 'user-display', 'danger-zone'];
+                showElements.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.remove('hidden');
+                });
 
                 // Hide Auth UI
-                document.getElementById('auth-section').classList.add('hidden');
-                document.getElementById('login-btn').classList.add('hidden');
+                const hideElements = ['auth-section', 'login-btn'];
+                hideElements.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('hidden');
+                });
 
                 renderVault();
                 updateStats();
@@ -888,15 +876,18 @@
                 currentUser = null;
 
                 // Hide App UI
-                document.getElementById('app-content').classList.add('hidden');
-                document.getElementById('nav-tabs').classList.add('hidden');
-                document.getElementById('add-item-btn').classList.add('hidden');
-                document.getElementById('user-display').classList.add('hidden');
-                document.getElementById('danger-zone').classList.add('hidden');
+                const hideElements = ['dashboard', 'nav-tabs', 'add-item-btn', 'user-display', 'danger-zone'];
+                hideElements.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('hidden');
+                });
 
                 // Show Auth UI
-                document.getElementById('auth-section').classList.remove('hidden');
-                document.getElementById('login-btn').classList.remove('hidden');
+                const showElements = ['auth-section', 'login-btn'];
+                showElements.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.remove('hidden');
+                });
 
                 switchAuthMode('signin');
                 renderVault();
