@@ -356,7 +356,6 @@
 
     <script type="module">
         import { Amplify, Auth } from 'https://esm.sh/aws-amplify@5.3.11';
-        window.Auth = Auth;
 
         Amplify.configure({
             Auth: {
@@ -366,6 +365,8 @@
                 authenticationFlowType: 'USER_PASSWORD_AUTH'
             }
         });
+
+        window.Auth = Auth;
 
         const REVENUECAT_PUBLIC_API_KEY = 'YOUR_REVENUECAT_PUBLIC_API_KEY';
 
@@ -405,24 +406,6 @@
         window.handleAccountDeletion = handleAccountDeletion;
         window.handleSignOut = handleSignOut;
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            await checkAuthState();
-            const isEnabled = localStorage.getItem('notificationsEnabled') === 'true';
-            document.getElementById('notify-toggle').checked = isEnabled;
-            if (isEnabled) checkForDueMaintenance();
-            if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
-
-            // Set default date to today
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('itemDate').value = today;
-
-            document.getElementById('delete-confirm-input').addEventListener('input', (e) => {
-                const btn = document.getElementById('delete-confirm-btn');
-                btn.disabled = e.target.value.toUpperCase() !== 'DELETE';
-            });
-
-            document.getElementById('input-form').addEventListener('submit', addItem);
-        });
 
         function addItem(event) {
             if (event) event.preventDefault();
@@ -1115,6 +1098,24 @@
                 console.error("Sign out error:", error);
             }
         }
+
+        // Initialize App Timing Fixes
+        await checkAuthState();
+        const isEnabled = localStorage.getItem('notificationsEnabled') === 'true';
+        document.getElementById('notify-toggle').checked = isEnabled;
+        if (isEnabled) checkForDueMaintenance();
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+
+        // Set default date to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('itemDate').value = today;
+
+        document.getElementById('delete-confirm-input').addEventListener('input', (e) => {
+            const btn = document.getElementById('delete-confirm-btn');
+            btn.disabled = e.target.value.toUpperCase() !== 'DELETE';
+        });
+
+        document.getElementById('input-form').addEventListener('submit', addItem);
     </script>
 </body>
 </html>
