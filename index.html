@@ -891,35 +891,46 @@
             try {
                 const user = await aws_amplify.Auth.currentAuthenticatedUser();
                 currentUser = user;
-                const attributes = await aws_amplify.Auth.userAttributes(user);
-                const tierAttr = attributes.find(a => a.Name === 'custom:tier');
-                const emailAttr = attributes.find(a => a.Name === 'email');
-                currentUser.tier = tierAttr ? tierAttr.Value : 'Free';
 
-                // Configure RevenueCat with Cognito sub
-                if (typeof Purchases !== 'undefined' && user.attributes && user.attributes.sub) {
-                    Purchases.Purchases.configure(REVENUECAT_PUBLIC_API_KEY, user.attributes.sub);
-                    await updateTierFromRevenueCat();
-                }
-
-                const userEmailElem = document.getElementById('user-email');
-                if (userEmailElem) {
-                    userEmailElem.innerText = emailAttr ? emailAttr.Value : (user.attributes ? user.attributes.email : '');
-                }
-
-                // Show App UI
+                // Show App UI Immediately
                 const showElements = ['dashboard', 'nav-tabs', 'add-item-btn', 'user-display', 'danger-zone'];
                 showElements.forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.classList.remove('hidden');
                 });
 
-                // Hide Auth UI
+                // Hide Auth UI Immediately
                 const hideElements = ['auth-section', 'login-btn'];
                 hideElements.forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.classList.add('hidden');
                 });
+
+                // Nested try-catch for non-critical data fetching
+                try {
+                    const attributes = await aws_amplify.Auth.userAttributes(user);
+                    const tierAttr = attributes.find(a => a.Name === 'custom:tier');
+                    const emailAttr = attributes.find(a => a.Name === 'email');
+                    currentUser.tier = tierAttr ? tierAttr.Value : 'Free';
+
+                    // Configure RevenueCat with Cognito sub
+                    if (typeof Purchases !== 'undefined' && user.attributes && user.attributes.sub) {
+                        Purchases.Purchases.configure(REVENUECAT_PUBLIC_API_KEY, user.attributes.sub);
+                        await updateTierFromRevenueCat();
+                    }
+
+                    const userEmailElem = document.getElementById('user-email');
+                    if (userEmailElem) {
+                        userEmailElem.innerText = emailAttr ? emailAttr.Value : (user.attributes ? user.attributes.email : '');
+                    }
+                } catch (dataError) {
+                    console.error("Non-critical data fetching failed:", dataError);
+                    // Still attempt to set email if available directly from user object
+                    const userEmailElem = document.getElementById('user-email');
+                    if (userEmailElem && user.attributes && user.attributes.email) {
+                        userEmailElem.innerText = user.attributes.email;
+                    }
+                }
 
                 renderVault();
                 updateStats();
