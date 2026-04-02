@@ -9,33 +9,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-    <!-- AWS Amplify SDK -->
-   <script type="module">
-    import { Amplify, Auth } from 'https://esm.sh/aws-amplify@5.3.11';
-
-    // 1. Attach to window so the rest of Jules's code (like checkAuthState) can find it
-    window.aws_amplify = {
-        Amplify: Amplify,
-        Auth: Auth
-    };
-
-    // 2. Configure AWS with your exact, verified keys
-    window.aws_amplify.Amplify.configure({
-        Auth: {
-            region: 'us-east-1',
-            userPoolId: 'us-east-1_c9WukUWbT',
-            userPoolWebClientId: '4dbcdjlba00o0otqnr29ul2rev',
-            authenticationFlowType: 'USER_PASSWORD_AUTH'
-        }
-    });
-
-    console.log("Amplify loaded and configured successfully via ESM!");
-
-    // 3. Kickstart the UI check now that the engine is actually running
-    if (typeof window.checkAuthState === 'function') {
-        window.checkAuthState();
-    }
-</script>
+    <!-- AWS Amplify SDK (Loaded via Main Module Script) -->
     <!-- RevenueCat Web SDK -->
     <script src="https://unpkg.com/@revenuecat/purchases-js@1.29.0/dist/Purchases.umd.js"></script>
 
@@ -380,7 +354,18 @@
     </div>
 
 
-    <script>
+    <script type="module">
+        import { Amplify, Auth } from 'https://esm.sh/aws-amplify@5.3.11';
+
+        Amplify.configure({
+            Auth: {
+                region: 'us-east-1',
+                userPoolId: 'us-east-1_c9WukUWbT',
+                userPoolWebClientId: '4dbcdjlba00o0otqnr29ul2rev',
+                authenticationFlowType: 'USER_PASSWORD_AUTH'
+            }
+        });
+
         const REVENUECAT_PUBLIC_API_KEY = 'YOUR_REVENUECAT_PUBLIC_API_KEY';
 
         let vaultData = JSON.parse(localStorage.getItem('sustainVault')) || [];
@@ -388,6 +373,36 @@
         let currentUser = null;
         let authMode = 'signin'; // 'signin', 'signup', 'confirm'
         let itemToDelete = null;
+
+
+        // Expose functions to window for HTML event handlers
+        window.addItem = addItem;
+        window.syncToAWS = syncToAWS;
+        window.renderVault = renderVault;
+        window.deleteItem = deleteItem;
+        window.toggleDeleteItemModal = toggleDeleteItemModal;
+        window.confirmDeleteItem = confirmDeleteItem;
+        window.updateStats = updateStats;
+        window.toggleNotifications = toggleNotifications;
+        window.checkForDueMaintenance = checkForDueMaintenance;
+        window.sendLocalNotification = sendLocalNotification;
+        window.switchTab = switchTab;
+        window.toggleForm = toggleForm;
+        window.toggleSettingsModal = toggleSettingsModal;
+        window.toggleDeleteAccountModal = toggleDeleteAccountModal;
+        window.exportToCSV = exportToCSV;
+        window.togglePasswordVisibility = togglePasswordVisibility;
+        window.clearAuthStatus = clearAuthStatus;
+        window.showAuthStatus = showAuthStatus;
+        window.switchAuthMode = switchAuthMode;
+        window.handleAuthSubmit = handleAuthSubmit;
+        window.checkAuthState = checkAuthState;
+        window.updateTierFromRevenueCat = updateTierFromRevenueCat;
+        window.joinProComWaitlist = joinProComWaitlist;
+        window.togglePaywall = togglePaywall;
+        window.handleUpgrade = handleUpgrade;
+        window.handleAccountDeletion = handleAccountDeletion;
+        window.handleSignOut = handleSignOut;
 
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAuthState();
@@ -462,7 +477,7 @@
             indicator.classList.add('text-blue-500', 'fa-spin');
 
             try {
-                const session = await aws_amplify.Auth.currentSession();
+                const session = await Auth.currentSession();
                 const token = session.getAccessToken().getJwtToken();
                 // Replace with your actual API Gateway endpoint
                 const apiEndpoint = 'https://YOUR_API_ID.execute-api.REGION.amazonaws.com/prod/sync';
@@ -845,7 +860,7 @@
             try {
                 if (authMode === 'signin') {
                     if (!password) return showAuthStatus("Password is required");
-                    const user = await aws_amplify.Auth.signIn(email, password);
+                    const user = await Auth.signIn(email, password);
                     console.log("Logged in:", user);
                     await checkAuthState();
                 }
@@ -853,7 +868,7 @@
                     if (!password) return showAuthStatus("Password is required");
                     if (password !== confirmPassword) return showAuthStatus("Passwords do not match");
 
-                    await aws_amplify.Auth.signUp({
+                    await Auth.signUp({
                         username: email,
                         password,
                         attributes: {
@@ -868,12 +883,12 @@
                 }
                 else if (authMode === 'confirm') {
                     if (!code) return showAuthStatus("Verification code is required");
-                    await aws_amplify.Auth.confirmSignUp(email, code);
+                    await Auth.confirmSignUp(email, code);
                     switchAuthMode('signin');
                     showAuthStatus("Account verified! You can now sign in.", false);
                 }
                 else if (authMode === 'forgot_password') {
-                    await aws_amplify.Auth.forgotPassword(email);
+                    await Auth.forgotPassword(email);
                     switchAuthMode('reset_password');
                     showAuthStatus("Recovery code sent to your email", false);
                 }
@@ -881,7 +896,7 @@
                     if (!code) return showAuthStatus("Verification code is required");
                     if (!password) return showAuthStatus("New Password is required");
                     if (password !== confirmPassword) return showAuthStatus("Passwords do not match");
-                    await aws_amplify.Auth.forgotPasswordSubmit(email, code, password);
+                    await Auth.forgotPasswordSubmit(email, code, password);
                     switchAuthMode('signin');
                     showAuthStatus("Password reset successful! Please sign in.", false);
                 }
@@ -893,7 +908,7 @@
 
         async function checkAuthState() {
             try {
-                const user = await aws_amplify.Auth.currentAuthenticatedUser();
+                const user = await Auth.currentAuthenticatedUser();
                 currentUser = user;
 
                 // Show App UI Immediately
@@ -912,7 +927,7 @@
 
                 // Nested try-catch for non-critical data fetching
                 try {
-                    const attributes = await aws_amplify.Auth.userAttributes(user);
+                    const attributes = await Auth.userAttributes(user);
                     const tierAttr = attributes.find(a => a.Name === 'custom:tier');
                     const emailAttr = attributes.find(a => a.Name === 'email');
                     currentUser.tier = tierAttr ? tierAttr.Value : 'Free';
@@ -1093,7 +1108,7 @@
 
         async function handleSignOut() {
             try {
-                await aws_amplify.Auth.signOut();
+                await Auth.signOut();
                 await checkAuthState();
             } catch (error) {
                 console.error("Sign out error:", error);
