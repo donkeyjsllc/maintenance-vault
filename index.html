@@ -13,26 +13,21 @@
     <script src="https://cdn.amplify.aws/packages/core/5.0.5/aws-amplify-core.min.js"></script>
     <script src="https://cdn.amplify.aws/packages/auth/5.0.5/aws-amplify-auth.min.js"></script>
     <script>
-        const amplifyConfig = {
-            Auth: {
-                region: 'us-east-1',
-                userPoolId: 'us-east-1_c9WukUWbT',
-                userPoolWebClientId: '4dbcdjlbao0o0otqnr29ul2rev'
-            },
-            oauth: {},
-            Storage: {
-                AWSS3: {
-                    bucket: 'maintenance-vault-storage',
-                    region: 'us-east-1'
-                }
-            }
-        };
+        // Check for libraries from the AWS Amplify CDN
+        // Note: These libraries export to global names aws_amplify_core and aws_amplify_auth
+        if (typeof aws_amplify_core !== 'undefined' && typeof aws_amplify_auth !== 'undefined') {
+            const { Amplify } = aws_amplify_core;
+            const { Auth } = aws_amplify_auth;
 
-        if (window.aws_amplify_core && window.aws_amplify_auth) {
-            window.Amplify = window.aws_amplify_core.Amplify;
-            window.Amplify.Auth = window.aws_amplify_auth.Auth;
-            window.Amplify.configure(amplifyConfig);
-            window.aws_amplify = window.Amplify;
+            Amplify.configure({
+                Auth: {
+                    region: 'us-east-1',
+                    userPoolId: 'us-east-1_c9WukUWbT',
+                    userPoolWebClientId: '4dbcdjlba00o0otqnr29ul2rev',
+                    oauth: {}
+                }
+            });
+            window.aws_amplify = { Amplify, Auth };
         } else {
             console.error("Amplify library not found. Please verify the CDN URLs.");
         }
