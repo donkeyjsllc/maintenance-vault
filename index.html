@@ -908,8 +908,64 @@
                     syncToAWS();
                 });
             } else {
-                handleAuthFailure(new Error("No user found"));
-            }
+              function checkAuthState() {
+            return new Promise((resolve) => {
+                const cognitoUser = userPool.getCurrentUser();
+                
+                if (cognitoUser != null) {
+                    cognitoUser.getSession((err, session) => {
+                        if (err) {
+                            handleAuthFailure(err);
+                            resolve();
+                            return;
+                        }
+                        
+                        currentUser = cognitoUser;
+
+                        // Show App UI Immediately
+                        const showElements = ['dashboard', 'nav-tabs', 'add-item-btn', 'user-display', 'danger-zone'];
+                        showElements.forEach(id => {
+                            const el = document.getElementById(id);
+                            if (el) el.classList.remove('hidden');
+                        });
+
+                        // Hide Auth UI
+                        const hideElements = ['auth-section', 'login-btn'];
+                        hideElements.forEach(id => {
+                            const el = document.getElementById(id);
+                            if (el) el.classList.add('hidden');
+                        });
+
+                        cognitoUser.getUserAttributes((err, attributes) => {
+                            if (!err && attributes) {
+                                const tierAttr = attributes.find(a => a.getName() === 'custom:tier');
+                                const emailAttr = attributes.find(a => a.getName() === 'email');
+                                const subAttr = attributes.find(a => a.getName() === 'sub');
+                                
+                                currentUser.tier = tierAttr ? tierAttr.getValue() : 'Free';
+
+                                if (typeof Purchases !== 'undefined' && subAttr) {
+                                    Purchases.Purchases.configure(REVENUECAT_PUBLIC_API_KEY, subAttr.getValue());
+                                    updateTierFromRevenueCat();
+                                }
+
+                                const userEmailElem = document.getElementById('user-email');
+                                if (userEmailElem) {
+                                    userEmailElem.innerText = emailAttr ? emailAttr.getValue() : cognitoUser.getUsername();
+                                }
+                            }
+                        });
+
+                        renderVault();
+                        updateStats();
+                        syncToAWS();
+                        resolve();
+                    });
+                } else {
+                    handleAuthFailure(new Error("No user found"));
+                    resolve();
+                }
+            });
         }
 
         function handleAuthFailure(e) {
@@ -1039,23 +1095,25 @@
             checkAuthState();
         }
 
-        // Initialize App
-        checkAuthState();
-        
-        const isEnabled = localStorage.getItem('notificationsEnabled') === 'true';
-        document.getElementById('notify-toggle').checked = isEnabled;
-        if (isEnabled) checkForDueMaintenance();
-        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+        // --- THE FIX: Wrap initialization in an async function so we can await ---
+        (async function initializeApp() {
+            await checkAuthState();
+            
+            const isEnabled = localStorage.getItem('notificationsEnabled') === 'true';
+            document.getElementById('notify-toggle').checked = isEnabled;
+            if (isEnabled) checkForDueMaintenance();
+            if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('itemDate').value = today;
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('itemDate').value = today;
 
-        document.getElementById('delete-confirm-input').addEventListener('input', (e) => {
-            const btn = document.getElementById('delete-confirm-btn');
-            btn.disabled = e.target.value.toUpperCase() !== 'DELETE';
-        });
+            document.getElementById('delete-confirm-input').addEventListener('input', (e) => {
+                const btn = document.getElementById('delete-confirm-btn');
+                btn.disabled = e.target.value.toUpperCase() !== 'DELETE';
+            });
 
-        document.getElementById('input-form').addEventListener('submit', addItem);
+            document.getElementById('input-form').addEventListener('submit', addItem);
+        })();
     </script>
 </body>
 </html>
