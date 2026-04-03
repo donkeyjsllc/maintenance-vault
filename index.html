@@ -1,429 +1,412 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MaintenanceVault</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="icon-192.png">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-    <script src="https://unpkg.com/aws-amplify@4.6.6/dist/aws-amplify.min.js"></script>
-    
-    <script src="https://unpkg.com/@revenuecat/purchases-js@1.29.0/dist/Purchases.umd.js"></script>
+<script>window.global = window;</script>
+<script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.7/dist/amazon-cognito-identity.min.js"></script>
 
-    <style>
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #111827; }
-        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
-        .tab-active { border-bottom: 2px solid #3b82f6; color: #60a5fa; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
-    </style>
-</head>
+<script src="https://unpkg.com/@revenuecat/purchases-js@1.29.0/dist/Purchases.umd.js"></script>
 
-<body class="bg-gray-900 text-gray-200 font-sans min-h-screen flex flex-col">
-
-    <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 shadow-md">
-        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <h1 class="text-xl font-bold text-white tracking-tight flex items-center">
-                    <img src="icon-192.png" alt="MaintenanceVault Logo" class="w-8 h-8 sm:w-10 sm:h-10 rounded shadow-md mr-2">MaintenanceVault
-                </h1>
-                <button onclick="window.location.reload()" class="bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white rounded-full w-8 h-8 flex items-center justify-center transition-all shadow-sm" title="Reload App">
-                    <i class="fas fa-sync-alt text-xs"></i>
-                </button>
-                <button onclick="toggleSettingsModal()" class="bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white rounded-full w-8 h-8 flex items-center justify-center transition-all shadow-sm" title="Settings">
-                    <i class="fas fa-cog text-xs"></i>
-                </button>
-            </div>
-            
-            <div class="flex flex-col items-end">
-                <div id="user-display" class="hidden text-[10px] text-blue-400 font-bold mb-1 flex items-center gap-2">
-                    <i id="sync-indicator" class="fas fa-cloud text-gray-600 hidden" title="Cloud Sync Active"></i>
-                    <span id="user-email"></span>
-                    <button id="sign-out-btn" onclick="handleSignOut()" class="text-gray-500 hover:text-white"><i class="fas fa-sign-out-alt"></i></button>
-                </div>
-                <button id="login-btn" onclick="switchAuthMode('signin')" class="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded mb-1 transition-all">SIGN IN / JOIN</button>
-
-                <div class="text-[10px] text-gray-400 uppercase mb-1">CO2 Avoided: <span id="co2-stat" class="text-green-400 font-bold">0 kg</span></div>
-                <label class="inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="notify-toggle" class="sr-only peer" onchange="toggleNotifications()">
-                    <div class="relative w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                    <span class="ms-2 text-[9px] font-bold text-gray-500 uppercase">Alerts</span>
-                </label>
-            </div>
+<style>
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #111827; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+    .tab-active { border-bottom: 2px solid #3b82f6; color: #60a5fa; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+</style>
+<header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 shadow-md">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <h1 class="text-xl font-bold text-white tracking-tight flex items-center">
+                <img src="icon-192.png" alt="MaintenanceVault Logo" class="w-8 h-8 sm:w-10 sm:h-10 rounded shadow-md mr-2">MaintenanceVault
+            </h1>
+            <button onclick="window.location.reload()" class="bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white rounded-full w-8 h-8 flex items-center justify-center transition-all shadow-sm" title="Reload App">
+                <i class="fas fa-sync-alt text-xs"></i>
+            </button>
+            <button onclick="toggleSettingsModal()" class="bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white rounded-full w-8 h-8 flex items-center justify-center transition-all shadow-sm" title="Settings">
+                <i class="fas fa-cog text-xs"></i>
+            </button>
         </div>
         
-        <div id="nav-tabs" class="hidden flex max-w-4xl mx-auto px-4 mt-2 gap-6 text-sm font-semibold text-gray-500">
-            <button onclick="switchTab('vehicle')" id="tab-vehicle" class="pb-2 tab-active transition-colors">
-                <i class="fas fa-truck-pickup mr-1"></i> VEHICLE
-            </button>
-            <button onclick="switchTab('property')" id="tab-property" class="pb-2 hover:text-gray-300 transition-colors">
-                <i class="fas fa-home mr-1"></i> PROPERTY
-            </button>
-            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="pb-2 hover:text-gray-300 transition-colors">
-                <i class="fas fa-chart-pie mr-1"></i> IMPACT
-            </button>
+        <div class="flex flex-col items-end">
+            <div id="user-display" class="hidden text-[10px] text-blue-400 font-bold mb-1 flex items-center gap-2">
+                <i id="sync-indicator" class="fas fa-cloud text-gray-600 hidden" title="Cloud Sync Active"></i>
+                <span id="user-email"></span>
+                <button id="sign-out-btn" onclick="handleSignOut()" class="text-gray-500 hover:text-white"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
+            <button id="login-btn" onclick="switchAuthMode('signin')" class="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded mb-1 transition-all">SIGN IN / JOIN</button>
+
+            <div class="text-[10px] text-gray-400 uppercase mb-1">CO2 Avoided: <span id="co2-stat" class="text-green-400 font-bold">0 kg</span></div>
+            <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="notify-toggle" class="sr-only peer" onchange="toggleNotifications()">
+                <div class="relative w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                <span class="ms-2 text-[9px] font-bold text-gray-500 uppercase">Alerts</span>
+            </label>
         </div>
-    </header>
+    </div>
+    
+    <div id="nav-tabs" class="hidden flex max-w-4xl mx-auto px-4 mt-2 gap-6 text-sm font-semibold text-gray-500">
+        <button onclick="switchTab('vehicle')" id="tab-vehicle" class="pb-2 tab-active transition-colors">
+            <i class="fas fa-truck-pickup mr-1"></i> VEHICLE
+        </button>
+        <button onclick="switchTab('property')" id="tab-property" class="pb-2 hover:text-gray-300 transition-colors">
+            <i class="fas fa-home mr-1"></i> PROPERTY
+        </button>
+        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="pb-2 hover:text-gray-300 transition-colors">
+            <i class="fas fa-chart-pie mr-1"></i> IMPACT
+        </button>
+    </div>
+</header>
 
-    <main class="max-w-4xl mx-auto p-4 flex-grow w-full">
+<main class="max-w-4xl mx-auto p-4 flex-grow w-full">
 
-        <div id="dashboard" class="hidden">
-            <form id="input-form" class="bg-gray-800 rounded-xl p-5 mb-6 border border-gray-700 shadow-xl animate-fade-in">
-            <h2 class="text-white font-bold mb-4 flex items-center">
-                <i class="fas fa-plus-circle text-blue-500 mr-2"></i> New Maintenance Log
-            </h2>
+    <div id="dashboard" class="hidden">
+        <form id="input-form" class="bg-gray-800 rounded-xl p-5 mb-6 border border-gray-700 shadow-xl animate-fade-in">
+        <h2 class="text-white font-bold mb-4 flex items-center">
+            <i class="fas fa-plus-circle text-blue-500 mr-2"></i> New Maintenance Log
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs text-gray-500 uppercase mb-1">Date</label>
+                <input type="date" id="itemDate" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none transition-colors">
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-500 uppercase mb-1">Equipment/Vehicle Name</label>
+                <input type="text" id="itemAssetName" placeholder="e.g. Work Truck, HVAC, Property" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none transition-colors">
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-500 uppercase mb-1">Service Performed</label>
+                <input type="text" id="itemName" placeholder="e.g. Oil Change 0W-20" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none transition-colors">
+            </div>
+
+            <div>
+                <label class="block text-xs text-gray-500 uppercase mb-1">Cost ($)</label>
+                <input type="number" id="itemCost" step="0.01" placeholder="0.00" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none transition-colors">
+            </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs text-gray-500 uppercase mb-1">Date</label>
-                    <input type="date" id="itemDate" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none transition-colors">
-                </div>
-
-                <div>
-                    <label class="block text-xs text-gray-500 uppercase mb-1">Equipment/Vehicle Name</label>
-                    <input type="text" id="itemAssetName" placeholder="e.g. Work Truck, HVAC, Property" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none transition-colors">
-                </div>
-
-                <div>
-                    <label class="block text-xs text-gray-500 uppercase mb-1">Service Performed</label>
-                    <input type="text" id="itemName" placeholder="e.g. Oil Change 0W-20" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none transition-colors">
-                </div>
-
-                <div>
-                    <label class="block text-xs text-gray-500 uppercase mb-1">Cost ($)</label>
-                    <input type="number" id="itemCost" step="0.01" placeholder="0.00" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none transition-colors">
-                </div>
-                
-                <div>
-                    <label class="block text-xs text-gray-500 uppercase mb-1">Category</label>
-                    <select id="itemCategory" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none">
-                        <option value="Vehicle">Vehicle</option>
-                        <option value="Property">Property</option>
-                        <option value="Equipment">Equipment</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-xs text-gray-500 uppercase mb-1">Part # / Specs</label>
-                    <input type="text" id="itemPart" placeholder="e.g. PF63 / 8 Quarts" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-yellow-400 font-mono outline-none">
-                </div>
-
-                <div class="flex items-center justify-between bg-gray-900 p-2 rounded border border-gray-600">
-                    <span class="text-xs text-gray-400 uppercase">Action Type</span>
-                    <div class="flex gap-2">
-                        <label class="flex items-center gap-1 cursor-pointer">
-                            <input type="radio" name="actionType" value="replace" checked class="accent-blue-500">
-                            <span class="text-sm">Replace</span>
-                        </label>
-                        <label class="flex items-center gap-1 cursor-pointer">
-                            <input type="radio" name="actionType" value="repair" class="accent-green-500">
-                            <span class="text-sm text-green-400">Repair</span>
-                        </label>
-                    </div>
-                </div>
+            <div>
+                <label class="block text-xs text-gray-500 uppercase mb-1">Category</label>
+                <select id="itemCategory" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none">
+                    <option value="Vehicle">Vehicle</option>
+                    <option value="Property">Property</option>
+                    <option value="Equipment">Equipment</option>
+                </select>
             </div>
 
-            <div class="mt-4">
-                <label class="block text-xs text-gray-500 uppercase mb-1">Notes (Torque, Gap, etc.)</label>
-                <textarea id="itemNotes" rows="2" placeholder="e.g. Torque drain plug to 18 ft-lbs" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-gray-300 text-sm outline-none"></textarea>
+            <div>
+                <label class="block text-xs text-gray-500 uppercase mb-1">Part # / Specs</label>
+                <input type="text" id="itemPart" placeholder="e.g. PF63 / 8 Quarts" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-yellow-400 font-mono outline-none">
             </div>
 
-            <button type="submit" id="save-entry-btn" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95">Save Entry</button>
-        </form>
-
-            <div id="vault-list" class="grid gap-4"></div>
-
-            <div id="dashboard-view" class="hidden animate-fade-in">
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                    <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 text-center">
-                        <div class="text-3xl font-bold text-green-400" id="dash-repaired">0</div>
-                        <div class="text-xs text-gray-500 uppercase tracking-wider">Items Repaired</div>
-                    </div>
-                    <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 text-center">
-                        <div class="text-3xl font-bold text-blue-400" id="dash-replaced">0</div>
-                        <div class="text-xs text-gray-500 uppercase tracking-wider">Items Replaced</div>
-                    </div>
-                </div>
-
-                <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
-                    <h3 class="font-bold text-white mb-2 flex items-center"><i class="fas fa-recycle text-green-500 mr-2"></i>Impact Calculator</h3>
-                    <p class="text-sm text-gray-400 mb-6 leading-relaxed">Based on "Repair vs Replace" logic. Repairing avoids ~88% of new production emissions.</p>
-                    <div class="w-full bg-gray-700 rounded-full h-6 mb-2 overflow-hidden">
-                        <div id="impact-bar" class="bg-gradient-to-r from-green-600 to-green-400 h-6 rounded-full transition-all duration-1000" style="width: 0%"></div>
-                    </div>
-                    <div class="text-right text-xs text-green-400 font-mono font-bold uppercase tracking-wide" id="impact-percent">0% Circular Economy Score</div>
+            <div class="flex items-center justify-between bg-gray-900 p-2 rounded border border-gray-600">
+                <span class="text-xs text-gray-400 uppercase">Action Type</span>
+                <div class="flex gap-2">
+                    <label class="flex items-center gap-1 cursor-pointer">
+                        <input type="radio" name="actionType" value="replace" checked class="accent-blue-500">
+                        <span class="text-sm">Replace</span>
+                    </label>
+                    <label class="flex items-center gap-1 cursor-pointer">
+                        <input type="radio" name="actionType" value="repair" class="accent-green-500">
+                        <span class="text-sm text-green-400">Repair</span>
+                    </label>
                 </div>
             </div>
         </div>
 
-        <div id="auth-section" class="hidden max-w-md mx-auto mt-10">
-            <div class="bg-blue-950 w-full rounded-2xl border border-gray-700 shadow-2xl overflow-hidden animate-fade-in">
-                <div id="auth-tabs" class="flex border-b border-gray-700">
-                    <button id="auth-tab-signin" onclick="switchAuthMode('signin')" class="flex-1 py-4 text-xs font-bold uppercase tracking-widest text-yellow-500 border-b-2 border-yellow-500 transition-all">Sign In</button>
-                    <button id="auth-tab-signup" onclick="switchAuthMode('signup')" class="flex-1 py-4 text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-gray-300 transition-all">Sign Up</button>
-                </div>
-
-                <div id="verify-header" class="hidden p-6 border-b border-gray-700 flex justify-between items-center">
-                    <h2 class="text-xl font-bold text-white tracking-tight flex items-center">
-                        <i class="fas fa-check-circle text-yellow-500 mr-2"></i>Verify Email
-                    </h2>
-                </div>
-
-                <div id="recovery-header" class="hidden p-6 border-b border-gray-700 flex justify-between items-center">
-                    <h2 class="text-xl font-bold text-white tracking-tight flex items-center">
-                        <i class="fas fa-key text-yellow-500 mr-2"></i>Reset Password
-                    </h2>
-                </div>
-
-                <div class="p-6">
-                    <form id="auth-form" onsubmit="handleAuthSubmit(event); return false;" class="space-y-4">
-                        </form>
-                    <div id="auth-status-msg" class="mt-4 p-3 rounded text-xs text-center hidden"></div>
-                </div>
-
-                <div class="p-4 bg-gray-900/50 text-center">
-                    <p class="text-[9px] text-gray-500 uppercase tracking-widest font-bold flex items-center justify-center gap-2">
-                        <i class="fas fa-shield-alt text-blue-500/50"></i> MaintenanceVault Secure Cloud
-                    </p>
-                </div>
-            </div>
+        <div class="mt-4">
+            <label class="block text-xs text-gray-500 uppercase mb-1">Notes (Torque, Gap, etc.)</label>
+            <textarea id="itemNotes" rows="2" placeholder="e.g. Torque drain plug to 18 ft-lbs" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-gray-300 text-sm outline-none"></textarea>
         </div>
-    </main>
 
-    <footer class="max-w-4xl mx-auto w-full p-6 border-t border-gray-800 text-center pb-24">
-        <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold mb-2">System Notice</p>
-        <p class="text-xs text-gray-500 leading-relaxed max-w-md mx-auto">
-            ⚠️ <strong>Data stored locally.</strong> This app operates offline. Clearing your browser cache or site data will permanently delete your maintenance logs. 
-            <a href="javascript:void(0)" onclick="exportToCSV()" class="text-blue-500 hover:underline">Back up your logs now</a>.
-            <br>Not professional mechanic advice; use specs at your own risk.
-        </p>
-    </footer>
+        <button type="submit" id="save-entry-btn" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95">Save Entry</button>
+    </form>
 
-    <button id="add-item-btn" onclick="toggleForm()" class="hidden fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-500 text-white w-14 h-14 rounded-full shadow-2xl z-50 flex items-center justify-center transition-transform active:scale-90">
-        <i class="fas fa-plus text-xl"></i>
-    </button>
+        <div id="vault-list" class="grid gap-4"></div>
 
-    <div id="paywall-modal" class="hidden fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-gray-800 w-full max-w-5xl rounded-2xl border border-blue-500/30 shadow-2xl overflow-hidden animate-fade-in relative">
-            <button onclick="togglePaywall()" class="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors z-10"><i class="fas fa-times text-xl"></i></button>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-700">
-                <div class="p-8 flex flex-col">
-                    <h3 class="text-gray-400 uppercase text-xs font-bold tracking-widest mb-2">Free</h3>
-                    <div class="text-4xl font-bold text-white mb-6">$0</div>
-                    <ul class="space-y-4 text-sm text-gray-400 mb-8 flex-grow">
-                        <li class="flex items-center gap-3"><i class="fas fa-check text-blue-500"></i>Up to 5 Assets</li>
-                        <li class="flex items-center gap-3"><i class="fas fa-check text-blue-500"></i>Offline LocalStorage</li>
-                        <li class="flex items-center gap-3"><i class="fas fa-check text-blue-500"></i>Basic Circular Economy Score</li>
-                    </ul>
-                    <button id="paywall-free-btn" disabled class="w-full py-3 px-4 rounded-xl font-bold transition-all bg-gray-700 text-gray-500 cursor-not-allowed uppercase text-[10px] tracking-widest">Current Plan</button>
+        <div id="dashboard-view" class="hidden animate-fade-in">
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 text-center">
+                    <div class="text-3xl font-bold text-green-400" id="dash-repaired">0</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wider">Items Repaired</div>
                 </div>
-
-                <div class="p-8 flex flex-col bg-blue-900/10 border-x-0 md:border-x border-blue-500/50 relative">
-                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-tighter shadow-lg">Recommended</div>
-                    <h3 class="text-blue-400 uppercase text-xs font-bold tracking-widest mb-2">Pro</h3>
-                    <div class="text-4xl font-bold text-white mb-1">$49.99<span class="text-sm font-normal text-gray-500 ml-1">/ yr</span></div>
-                    <p class="text-[10px] text-gray-500 mb-6 italic">Best for Individuals</p>
-                    <ul class="space-y-4 text-sm text-gray-300 mb-8 flex-grow">
-                        <li class="flex items-center gap-3 font-semibold text-blue-100"><i class="fas fa-check text-blue-400"></i>Unlimited Assets</li>
-                        <li class="flex items-center gap-3 font-semibold text-blue-100"><i class="fas fa-check text-blue-400"></i>AWS Cloud Sync (Multi-device)</li>
-                        <li class="flex items-center gap-3 font-semibold text-blue-100"><i class="fas fa-check text-blue-400"></i>PDF Exporting</li>
-                    </ul>
-                    <button id="paywall-pro-btn" onclick="handleUpgrade()" class="w-full py-4 px-4 rounded-xl font-bold transition-all bg-blue-600 hover:bg-blue-500 text-white shadow-lg active:scale-95 uppercase text-[10px] tracking-widest">Upgrade to Pro</button>
-                </div>
-
-                <div class="p-8 flex flex-col">
-                    <h3 class="text-yellow-500 uppercase text-xs font-bold tracking-widest mb-2">ProCom</h3>
-                    <div class="text-4xl font-bold text-white mb-1">$15<span class="text-sm font-normal text-gray-500 ml-1">/ seat / mo</span></div>
-                    <p class="text-[10px] text-gray-500 mb-6 italic">For Fleets & Crews</p>
-                    <ul class="space-y-4 text-sm text-gray-400 mb-8 flex-grow">
-                        <li class="flex items-center gap-3"><i class="fas fa-check text-yellow-600"></i>QR Code Engine Hours</li>
-                        <li class="flex items-center gap-3"><i class="fas fa-check text-yellow-600"></i>Real-time Triage Dashboard</li>
-                        <li class="flex items-center gap-3"><i class="fas fa-check text-yellow-600"></i>Role-Based Team Dispatch</li>
-                    </ul>
-                    <button id="paywall-procom-btn" onclick="joinProComWaitlist()" class="w-full py-3 px-4 rounded-xl font-bold transition-all border-2 border-yellow-600 text-yellow-500 hover:bg-yellow-600 hover:text-white uppercase text-[10px] tracking-widest text-center">Join the Waitlist</button>
+                <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 text-center">
+                    <div class="text-3xl font-bold text-blue-400" id="dash-replaced">0</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wider">Items Replaced</div>
                 </div>
             </div>
 
-            <div class="p-4 bg-gray-900/50 text-center border-t border-gray-700">
-                <p class="text-[9px] text-gray-500 uppercase tracking-widest font-bold">Secure Checkout via RevenueCat & Stripe</p>
+            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
+                <h3 class="font-bold text-white mb-2 flex items-center"><i class="fas fa-recycle text-green-500 mr-2"></i>Impact Calculator</h3>
+                <p class="text-sm text-gray-400 mb-6 leading-relaxed">Based on "Repair vs Replace" logic. Repairing avoids ~88% of new production emissions.</p>
+                <div class="w-full bg-gray-700 rounded-full h-6 mb-2 overflow-hidden">
+                    <div id="impact-bar" class="bg-gradient-to-r from-green-600 to-green-400 h-6 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                </div>
+                <div class="text-right text-xs text-green-400 font-mono font-bold uppercase tracking-wide" id="impact-percent">0% Circular Economy Score</div>
             </div>
         </div>
     </div>
 
-    <div id="settings-modal" class="hidden fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-blue-950 w-full max-w-md rounded-2xl border border-gray-700 shadow-2xl overflow-hidden animate-fade-in">
-            <div class="p-6 border-b border-gray-700 flex justify-between items-center bg-gradient-to-r from-blue-900/20 to-transparent">
-                <h2 class="text-xl font-bold text-white tracking-tight flex items-center">
-                    <i class="fas fa-cog text-yellow-500 mr-2"></i>Settings
-                </h2>
-                <button onclick="toggleSettingsModal()" class="text-gray-500 hover:text-white transition-colors"><i class="fas fa-times text-lg"></i></button>
+    <div id="auth-section" class="hidden max-w-md mx-auto mt-10">
+        <div class="bg-blue-950 w-full rounded-2xl border border-gray-700 shadow-2xl overflow-hidden animate-fade-in">
+            <div id="auth-tabs" class="flex border-b border-gray-700">
+                <button id="auth-tab-signin" onclick="switchAuthMode('signin')" class="flex-1 py-4 text-xs font-bold uppercase tracking-widest text-yellow-500 border-b-2 border-yellow-500 transition-all">Sign In</button>
+                <button id="auth-tab-signup" onclick="switchAuthMode('signup')" class="flex-1 py-4 text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-gray-300 transition-all">Sign Up</button>
             </div>
 
-            <div class="p-6 space-y-6">
-                <div class="space-y-4">
-                    <h4 class="text-white font-bold text-sm">Data Management</h4>
-                    <p class="text-xs text-gray-400">Export your maintenance logs to a CSV file for backup or use in other applications.</p>
+            <div id="verify-header" class="hidden p-6 border-b border-gray-700 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-white tracking-tight flex items-center">
+                    <i class="fas fa-check-circle text-yellow-500 mr-2"></i>Verify Email
+                </h2>
+            </div>
 
-                    <button onclick="exportToCSV()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
-                        <i class="fas fa-file-export text-sm"></i>
-                        <span>EXPORT DATA (CSV)</span>
-                    </button>
-                </div>
+            <div id="recovery-header" class="hidden p-6 border-b border-gray-700 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-white tracking-tight flex items-center">
+                    <i class="fas fa-key text-yellow-500 mr-2"></i>Reset Password
+                </h2>
+            </div>
 
-                <div id="danger-zone" class="hidden pt-4 border-t border-red-900/50 space-y-4">
-                    <h4 class="text-red-500 font-bold text-sm">Danger Zone</h4>
-                    <p class="text-xs text-gray-400">Permanently delete your account and all associated data from our cloud servers.</p>
-                    <button onclick="toggleDeleteAccountModal()" class="w-full bg-red-600/20 hover:bg-red-600 text-red-500 hover:text-white border border-red-600/50 font-bold py-3 rounded-lg transition-all active:scale-95 flex items-center justify-center gap-2">
-                        <i class="fas fa-user-slash text-sm"></i>
-                        <span>DELETE MY ACCOUNT & DATA</span>
-                    </button>
-                </div>
-
-                <div class="pt-4 border-t border-gray-700">
-                    <button onclick="toggleSettingsModal()" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg transition-all">CLOSE</button>
-                </div>
+            <div class="p-6">
+                <form id="auth-form" onsubmit="handleAuthSubmit(event); return false;" class="space-y-4">
+                    </form>
+                <div id="auth-status-msg" class="mt-4 p-3 rounded text-xs text-center hidden"></div>
             </div>
 
             <div class="p-4 bg-gray-900/50 text-center">
                 <p class="text-[9px] text-gray-500 uppercase tracking-widest font-bold flex items-center justify-center gap-2">
-                    <i class="fas fa-shield-alt text-blue-500/50"></i> MaintenanceVault Data Security
+                    <i class="fas fa-shield-alt text-blue-500/50"></i> MaintenanceVault Secure Cloud
                 </p>
             </div>
         </div>
     </div>
+</main>
 
-    <div id="delete-item-modal" class="hidden fixed inset-0 z-[70] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-blue-950 w-full max-w-sm rounded-2xl border border-gray-700 shadow-2xl overflow-hidden animate-fade-in">
-            <div class="p-6 text-center">
-                <div class="w-16 h-16 bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-900/30">
-                    <i class="fas fa-trash-alt text-red-500 text-2xl"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-2">Delete Log?</h3>
-                <p class="text-sm text-gray-400 mb-6">Are you sure you want to remove this maintenance record? This action cannot be undone.</p>
+<footer class="max-w-4xl mx-auto w-full p-6 border-t border-gray-800 text-center pb-24">
+    <p class="text-[10px] text-gray-600 uppercase tracking-widest font-bold mb-2">System Notice</p>
+    <p class="text-xs text-gray-500 leading-relaxed max-w-md mx-auto">
+        ⚠️ <strong>Data stored locally.</strong> This app operates offline. Clearing your browser cache or site data will permanently delete your maintenance logs. 
+        <a href="javascript:void(0)" onclick="exportToCSV()" class="text-blue-500 hover:underline">Back up your logs now</a>.
+        <br>Not professional mechanic advice; use specs at your own risk.
+    </p>
+</footer>
 
-                <div class="flex gap-3">
-                    <button onclick="toggleDeleteItemModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg transition-all">CANCEL</button>
-                    <button onclick="confirmDeleteItem()" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95">DELETE</button>
-                </div>
+<button id="add-item-btn" onclick="toggleForm()" class="hidden fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-500 text-white w-14 h-14 rounded-full shadow-2xl z-50 flex items-center justify-center transition-transform active:scale-90">
+    <i class="fas fa-plus text-xl"></i>
+</button>
+
+<div id="paywall-modal" class="hidden fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-gray-800 w-full max-w-5xl rounded-2xl border border-blue-500/30 shadow-2xl overflow-hidden animate-fade-in relative">
+        <button onclick="togglePaywall()" class="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors z-10"><i class="fas fa-times text-xl"></i></button>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-700">
+            <div class="p-8 flex flex-col">
+                <h3 class="text-gray-400 uppercase text-xs font-bold tracking-widest mb-2">Free</h3>
+                <div class="text-4xl font-bold text-white mb-6">$0</div>
+                <ul class="space-y-4 text-sm text-gray-400 mb-8 flex-grow">
+                    <li class="flex items-center gap-3"><i class="fas fa-check text-blue-500"></i>Up to 5 Assets</li>
+                    <li class="flex items-center gap-3"><i class="fas fa-check text-blue-500"></i>Offline LocalStorage</li>
+                    <li class="flex items-center gap-3"><i class="fas fa-check text-blue-500"></i>Basic Circular Economy Score</li>
+                </ul>
+                <button id="paywall-free-btn" disabled class="w-full py-3 px-4 rounded-xl font-bold transition-all bg-gray-700 text-gray-500 cursor-not-allowed uppercase text-[10px] tracking-widest">Current Plan</button>
+            </div>
+
+            <div class="p-8 flex flex-col bg-blue-900/10 border-x-0 md:border-x border-blue-500/50 relative">
+                <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-tighter shadow-lg">Recommended</div>
+                <h3 class="text-blue-400 uppercase text-xs font-bold tracking-widest mb-2">Pro</h3>
+                <div class="text-4xl font-bold text-white mb-1">$49.99<span class="text-sm font-normal text-gray-500 ml-1">/ yr</span></div>
+                <p class="text-[10px] text-gray-500 mb-6 italic">Best for Individuals</p>
+                <ul class="space-y-4 text-sm text-gray-300 mb-8 flex-grow">
+                    <li class="flex items-center gap-3 font-semibold text-blue-100"><i class="fas fa-check text-blue-400"></i>Unlimited Assets</li>
+                    <li class="flex items-center gap-3 font-semibold text-blue-100"><i class="fas fa-check text-blue-400"></i>AWS Cloud Sync (Multi-device)</li>
+                    <li class="flex items-center gap-3 font-semibold text-blue-100"><i class="fas fa-check text-blue-400"></i>PDF Exporting</li>
+                </ul>
+                <button id="paywall-pro-btn" onclick="handleUpgrade()" class="w-full py-4 px-4 rounded-xl font-bold transition-all bg-blue-600 hover:bg-blue-500 text-white shadow-lg active:scale-95 uppercase text-[10px] tracking-widest">Upgrade to Pro</button>
+            </div>
+
+            <div class="p-8 flex flex-col">
+                <h3 class="text-yellow-500 uppercase text-xs font-bold tracking-widest mb-2">ProCom</h3>
+                <div class="text-4xl font-bold text-white mb-1">$15<span class="text-sm font-normal text-gray-500 ml-1">/ seat / mo</span></div>
+                <p class="text-[10px] text-gray-500 mb-6 italic">For Fleets & Crews</p>
+                <ul class="space-y-4 text-sm text-gray-400 mb-8 flex-grow">
+                    <li class="flex items-center gap-3"><i class="fas fa-check text-yellow-600"></i>QR Code Engine Hours</li>
+                    <li class="flex items-center gap-3"><i class="fas fa-check text-yellow-600"></i>Real-time Triage Dashboard</li>
+                    <li class="flex items-center gap-3"><i class="fas fa-check text-yellow-600"></i>Role-Based Team Dispatch</li>
+                </ul>
+                <button id="paywall-procom-btn" onclick="joinProComWaitlist()" class="w-full py-3 px-4 rounded-xl font-bold transition-all border-2 border-yellow-600 text-yellow-500 hover:bg-yellow-600 hover:text-white uppercase text-[10px] tracking-widest text-center">Join the Waitlist</button>
+            </div>
+        </div>
+
+        <div class="p-4 bg-gray-900/50 text-center border-t border-gray-700">
+            <p class="text-[9px] text-gray-500 uppercase tracking-widest font-bold">Secure Checkout via RevenueCat & Stripe</p>
+        </div>
+    </div>
+</div>
+
+<div id="settings-modal" class="hidden fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-blue-950 w-full max-w-md rounded-2xl border border-gray-700 shadow-2xl overflow-hidden animate-fade-in">
+        <div class="p-6 border-b border-gray-700 flex justify-between items-center bg-gradient-to-r from-blue-900/20 to-transparent">
+            <h2 class="text-xl font-bold text-white tracking-tight flex items-center">
+                <i class="fas fa-cog text-yellow-500 mr-2"></i>Settings
+            </h2>
+            <button onclick="toggleSettingsModal()" class="text-gray-500 hover:text-white transition-colors"><i class="fas fa-times text-lg"></i></button>
+        </div>
+
+        <div class="p-6 space-y-6">
+            <div class="space-y-4">
+                <h4 class="text-white font-bold text-sm">Data Management</h4>
+                <p class="text-xs text-gray-400">Export your maintenance logs to a CSV file for backup or use in other applications.</p>
+
+                <button onclick="exportToCSV()" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fas fa-file-export text-sm"></i>
+                    <span>EXPORT DATA (CSV)</span>
+                </button>
+            </div>
+
+            <div id="danger-zone" class="hidden pt-4 border-t border-red-900/50 space-y-4">
+                <h4 class="text-red-500 font-bold text-sm">Danger Zone</h4>
+                <p class="text-xs text-gray-400">Permanently delete your account and all associated data from our cloud servers.</p>
+                <button onclick="toggleDeleteAccountModal()" class="w-full bg-red-600/20 hover:bg-red-600 text-red-500 hover:text-white border border-red-600/50 font-bold py-3 rounded-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fas fa-user-slash text-sm"></i>
+                    <span>DELETE MY ACCOUNT & DATA</span>
+                </button>
+            </div>
+
+            <div class="pt-4 border-t border-gray-700">
+                <button onclick="toggleSettingsModal()" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg transition-all">CLOSE</button>
+            </div>
+        </div>
+
+        <div class="p-4 bg-gray-900/50 text-center">
+            <p class="text-[9px] text-gray-500 uppercase tracking-widest font-bold flex items-center justify-center gap-2">
+                <i class="fas fa-shield-alt text-blue-500/50"></i> MaintenanceVault Data Security
+            </p>
+        </div>
+    </div>
+</div>
+
+<div id="delete-item-modal" class="hidden fixed inset-0 z-[70] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-blue-950 w-full max-w-sm rounded-2xl border border-gray-700 shadow-2xl overflow-hidden animate-fade-in">
+        <div class="p-6 text-center">
+            <div class="w-16 h-16 bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-900/30">
+                <i class="fas fa-trash-alt text-red-500 text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Delete Log?</h3>
+            <p class="text-sm text-gray-400 mb-6">Are you sure you want to remove this maintenance record? This action cannot be undone.</p>
+
+            <div class="flex gap-3">
+                <button onclick="toggleDeleteItemModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-lg transition-all">CANCEL</button>
+                <button onclick="confirmDeleteItem()" class="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95">DELETE</button>
             </div>
         </div>
     </div>
+</div>
 
-    <div id="delete-account-modal" class="hidden fixed inset-0 z-[70] bg-black/90 flex items-center justify-center p-4 backdrop-blur-md">
-        <div class="bg-gray-900 w-full max-w-md rounded-2xl border border-red-900 shadow-2xl overflow-hidden animate-fade-in">
-            <div class="p-6 border-b border-red-900/50 bg-red-950/20">
-                <h2 class="text-xl font-bold text-white tracking-tight flex items-center">
-                    <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>Delete Account?
-                </h2>
+<div id="delete-account-modal" class="hidden fixed inset-0 z-[70] bg-black/90 flex items-center justify-center p-4 backdrop-blur-md">
+    <div class="bg-gray-900 w-full max-w-md rounded-2xl border border-red-900 shadow-2xl overflow-hidden animate-fade-in">
+        <div class="p-6 border-b border-red-900/50 bg-red-950/20">
+            <h2 class="text-xl font-bold text-white tracking-tight flex items-center">
+                <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>Delete Account?
+            </h2>
+        </div>
+
+        <div class="p-6 space-y-4">
+            <div class="bg-red-900/10 border border-red-900/30 p-4 rounded-lg">
+                <p class="text-sm text-red-200 font-bold mb-2">Are you sure?</p>
+                <p class="text-xs text-red-300 leading-relaxed">
+                    This will permanently delete your account, cancel any active subscriptions, and erase all your maintenance logs from the cloud. <strong>This cannot be undone.</strong>
+                </p>
             </div>
 
-            <div class="p-6 space-y-4">
-                <div class="bg-red-900/10 border border-red-900/30 p-4 rounded-lg">
-                    <p class="text-sm text-red-200 font-bold mb-2">Are you sure?</p>
-                    <p class="text-xs text-red-300 leading-relaxed">
-                        This will permanently delete your account, cancel any active subscriptions, and erase all your maintenance logs from the cloud. <strong>This cannot be undone.</strong>
-                    </p>
-                </div>
+            <div class="space-y-2">
+                <label class="block text-[10px] text-gray-500 uppercase font-bold ml-1">Type "DELETE" to confirm</label>
+                <input type="text" id="delete-confirm-input" placeholder="DELETE" class="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 text-white focus:border-red-500 outline-none transition-all uppercase">
+            </div>
 
-                <div class="space-y-2">
-                    <label class="block text-[10px] text-gray-500 uppercase font-bold ml-1">Type "DELETE" to confirm</label>
-                    <input type="text" id="delete-confirm-input" placeholder="DELETE" class="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 text-white focus:border-red-500 outline-none transition-all uppercase">
-                </div>
-
-                <div class="flex gap-3 pt-2">
-                    <button onclick="toggleDeleteAccountModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 rounded-lg transition-all">CANCEL</button>
-                    <button id="delete-confirm-btn" onclick="handleAccountDeletion()" disabled class="flex-1 bg-red-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-red-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95">
-                        DELETE
-                    </button>
-                </div>
+            <div class="flex gap-3 pt-2">
+                <button onclick="toggleDeleteAccountModal()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 rounded-lg transition-all">CANCEL</button>
+                <button id="delete-confirm-btn" onclick="handleAccountDeletion()" disabled class="flex-1 bg-red-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-red-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95">
+                    DELETE
+                </button>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        // 1. Grab AWS tools directly from the pre-loaded script in the <head>
-        const { Amplify, Auth } = window.aws_amplify;
+<script>
+    // Use Amazon Cognito Identity SDK natively
+    const poolData = {
+        UserPoolId: 'us-east-1_c9WukUWbT',
+        ClientId: '4dbcdjlbao0o0otqnr29ul2rev'
+    };
+    const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
 
-        // 2. Configure Amplify
-        Amplify.configure({
-            Auth: {
-                region: 'us-east-1',
-                userPoolId: 'us-east-1_c9WukUWbT',
-                userPoolWebClientId: '4dbcdjlbao0o0otqnr29ul2rev',
-                authenticationFlowType: 'USER_PASSWORD_AUTH'
-            }
-        });
+    const REVENUECAT_PUBLIC_API_KEY = 'YOUR_REVENUECAT_PUBLIC_API_KEY';
 
-        const REVENUECAT_PUBLIC_API_KEY = 'YOUR_REVENUECAT_PUBLIC_API_KEY';
+    let vaultData = JSON.parse(localStorage.getItem('sustainVault')) || [];
+    let currentTab = 'vehicle';
+    let currentUser = null;
+    let authMode = 'signin';
+    let itemToDelete = null;
 
-        let vaultData = JSON.parse(localStorage.getItem('sustainVault')) || [];
-        let currentTab = 'vehicle';
-        let currentUser = null;
-        let authMode = 'signin';
-        let itemToDelete = null;
+    function addItem(event) {
+        if (event) event.preventDefault();
+        const assetName = document.getElementById('itemAssetName').value;
+        const name = document.getElementById('itemName').value;
+        const date = document.getElementById('itemDate').value;
+        const cost = document.getElementById('itemCost').value;
 
-        function addItem(event) {
-            if (event) event.preventDefault();
-            const assetName = document.getElementById('itemAssetName').value;
-            const name = document.getElementById('itemName').value;
-            const date = document.getElementById('itemDate').value;
-            const cost = document.getElementById('itemCost').value;
+        if(!name) return alert("Service Performed is required");
+        if(!date) return alert("Date is required");
 
-            if(!name) return alert("Service Performed is required");
-            if(!date) return alert("Date is required");
-
-            const isPro = currentUser && currentUser.tier === 'Pro';
-            if (!isPro && vaultData.length >= 5) {
-                togglePaywall();
-                return;
-            }
-
-            const newItem = {
-                itemId: crypto.randomUUID(),
-                assetName: assetName,
-                name: name,
-                category: document.getElementById('itemCategory').value,
-                part: document.getElementById('itemPart').value,
-                type: document.querySelector('input[name="actionType"]:checked').value,
-                notes: document.getElementById('itemNotes').value,
-                date: date,
-                cost: parseFloat(cost) || 0,
-                updatedAt: new Date().toISOString()
-            };
-            vaultData.unshift(newItem);
-            localStorage.setItem('sustainVault', JSON.stringify(vaultData));
-
-            if(currentTab !== 'dashboard') toggleForm();
-
-            renderVault();
-            updateStats();
-            document.getElementById('itemAssetName').value = '';
-            document.getElementById('itemName').value = '';
-            document.getElementById('itemPart').value = '';
-            document.getElementById('itemNotes').value = '';
-            document.getElementById('itemCost').value = '';
-            document.getElementById('itemDate').value = new Date().toISOString().split('T')[0];
-            syncToAWS();
+        const isPro = currentUser && currentUser.tier === 'Pro';
+        if (!isPro && vaultData.length >= 5) {
+            togglePaywall();
+            return;
         }
 
-        async function syncToAWS() {
-            if (!currentUser || currentUser.tier !== 'Pro') return;
+        const newItem = {
+            itemId: crypto.randomUUID(),
+            assetName: assetName,
+            name: name,
+            category: document.getElementById('itemCategory').value,
+            part: document.getElementById('itemPart').value,
+            type: document.querySelector('input[name="actionType"]:checked').value,
+            notes: document.getElementById('itemNotes').value,
+            date: date,
+            cost: parseFloat(cost) || 0,
+            updatedAt: new Date().toISOString()
+        };
+        vaultData.unshift(newItem);
+        localStorage.setItem('sustainVault', JSON.stringify(vaultData));
 
-            const indicator = document.getElementById('sync-indicator');
-            indicator.classList.remove('hidden', 'text-gray-600', 'text-red-500');
-            indicator.classList.add('text-blue-500', 'fa-spin');
+        if(currentTab !== 'dashboard') toggleForm();
 
+        renderVault();
+        updateStats();
+        document.getElementById('itemAssetName').value = '';
+        document.getElementById('itemName').value = '';
+        document.getElementById('itemPart').value = '';
+        document.getElementById('itemNotes').value = '';
+        document.getElementById('itemCost').value = '';
+        document.getElementById('itemDate').value = new Date().toISOString().split('T')[0];
+        syncToAWS();
+    }
+
+    async function syncToAWS() {
+        if (!currentUser || currentUser.tier !== 'Pro') return;
+
+        const indicator = document.getElementById('sync-indicator');
+        indicator.classList.remove('hidden', 'text-gray-600', 'text-red-500');
+        indicator.classList.add('text-blue-500', 'fa-spin');
+
+        currentUser.getSession(async (err, session) => {
+            if (err) {
+                indicator.classList.remove('fa-spin', 'text-blue-500');
+                indicator.classList.add('text-red-500');
+                return;
+            }
             try {
-                const session = await Auth.currentSession();
                 const token = session.getAccessToken().getJwtToken();
                 const apiEndpoint = 'https://YOUR_API_ID.execute-api.REGION.amazonaws.com/prod/sync';
-
-                console.log("Syncing to AWS...");
 
                 const pushResponse = await fetch(apiEndpoint, {
                     method: 'POST',
@@ -464,380 +447,412 @@
                 indicator.classList.remove('fa-spin', 'text-blue-500');
                 indicator.classList.add('text-red-500');
             }
+        });
+    }
+
+    function renderVault() {
+        const list = document.getElementById('vault-list');
+        list.innerHTML = '';
+        const filtered = vaultData.filter(item => {
+            if(currentTab === 'dashboard') return true;
+            if(currentTab === 'vehicle') return item.category === 'Vehicle';
+            if(currentTab === 'property') return item.category !== 'Vehicle';
+            return false;
+        });
+
+        if(filtered.length === 0) {
+            list.innerHTML = `<div class="text-center text-gray-600 mt-10 italic flex flex-col items-center"><i class="fas fa-clipboard-list text-4xl mb-4 opacity-20"></i>No logs found.</div>`;
+            return;
         }
 
-        function renderVault() {
-            const list = document.getElementById('vault-list');
-            list.innerHTML = '';
-            const filtered = vaultData.filter(item => {
-                if(currentTab === 'dashboard') return true;
-                if(currentTab === 'vehicle') return item.category === 'Vehicle';
-                if(currentTab === 'property') return item.category !== 'Vehicle';
-                return false;
-            });
+        filtered.forEach(item => {
+            const isRepair = item.type === 'repair';
+            const badgeColor = isRepair ? 'bg-green-900 text-green-300 border-green-800' : 'bg-blue-900 text-blue-300 border-blue-800';
+            const icon = item.category === 'Vehicle' ? 'fa-car' : 'fa-tools';
 
-            if(filtered.length === 0) {
-                list.innerHTML = `<div class="text-center text-gray-600 mt-10 italic flex flex-col items-center"><i class="fas fa-clipboard-list text-4xl mb-4 opacity-20"></i>No logs found.</div>`;
-                return;
+            let displayDate = 'N/A';
+            if (item.date) {
+                const dateParts = item.date.split('-');
+                if (dateParts.length === 3) {
+                    displayDate = `${dateParts[1]}/${dateParts[2]}/${dateParts[0]}`;
+                } else {
+                    displayDate = new Date(item.date).toLocaleDateString();
+                }
             }
 
-            filtered.forEach(item => {
-                const isRepair = item.type === 'repair';
-                const badgeColor = isRepair ? 'bg-green-900 text-green-300 border-green-800' : 'bg-blue-900 text-blue-300 border-blue-800';
-                const icon = item.category === 'Vehicle' ? 'fa-car' : 'fa-tools';
+            const displayCost = (item.cost || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
-                let displayDate = 'N/A';
-                if (item.date) {
-                    const dateParts = item.date.split('-');
-                    if (dateParts.length === 3) {
-                        displayDate = `${dateParts[1]}/${dateParts[2]}/${dateParts[0]}`;
-                    } else {
-                        displayDate = new Date(item.date).toLocaleDateString();
-                    }
-                }
-
-                const displayCost = (item.cost || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-
-                list.innerHTML += `
-                    <div class="bg-gray-800 rounded-lg p-4 border border-gray-700 shadow-sm relative group hover:border-blue-500 transition-colors">
-                        <button onclick="deleteItem('${item.itemId}')" class="absolute top-3 right-3 text-gray-600 hover:text-red-500 p-2"><i class="fas fa-trash"></i></button>
-                        <div class="flex items-start gap-4">
-                            <div class="mt-1 text-2xl text-gray-500 bg-gray-900 p-3 rounded-full h-12 w-12 flex items-center justify-center border border-gray-700"><i class="fas ${icon}"></i></div>
-                            <div class="flex-1">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-white text-lg leading-tight">${item.name}</h3>
-                                        <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">${item.assetName || 'General Asset'}</p>
-                                    </div>
-                                    <div class="text-right">
-                                        <p class="text-sm font-bold text-green-400">${displayCost}</p>
-                                        <p class="text-[10px] text-gray-500 font-mono uppercase tracking-tighter">${displayDate}</p>
-                                    </div>
+            list.innerHTML += `
+                <div class="bg-gray-800 rounded-lg p-4 border border-gray-700 shadow-sm relative group hover:border-blue-500 transition-colors">
+                    <button onclick="deleteItem('${item.itemId}')" class="absolute top-3 right-3 text-gray-600 hover:text-red-500 p-2"><i class="fas fa-trash"></i></button>
+                    <div class="flex items-start gap-4">
+                        <div class="mt-1 text-2xl text-gray-500 bg-gray-900 p-3 rounded-full h-12 w-12 flex items-center justify-center border border-gray-700"><i class="fas ${icon}"></i></div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-white text-lg leading-tight">${item.name}</h3>
+                                    <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest">${item.assetName || 'General Asset'}</p>
                                 </div>
-                                <div class="flex flex-wrap gap-2 my-2">
-                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide border ${badgeColor}">${item.type}</span>
-                                    <span class="text-[10px] font-mono text-yellow-500 bg-gray-900 px-2 py-0.5 rounded border border-gray-700 truncate max-w-[150px]">${item.part || 'No Part #'}</span>
+                                <div class="text-right">
+                                    <p class="text-sm font-bold text-green-400">${displayCost}</p>
+                                    <p class="text-[10px] text-gray-500 font-mono uppercase tracking-tighter">${displayDate}</p>
                                 </div>
-                                <p class="text-sm text-gray-400 mt-1 border-l-2 border-gray-600 pl-2 italic">"${item.notes}"</p>
                             </div>
+                            <div class="flex flex-wrap gap-2 my-2">
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide border ${badgeColor}">${item.type}</span>
+                                <span class="text-[10px] font-mono text-yellow-500 bg-gray-900 px-2 py-0.5 rounded border border-gray-700 truncate max-w-[150px]">${item.part || 'No Part #'}</span>
+                            </div>
+                            <p class="text-sm text-gray-400 mt-1 border-l-2 border-gray-600 pl-2 italic">"${item.notes}"</p>
                         </div>
-                    </div>`;
-            });
-        }
+                    </div>
+                </div>`;
+        });
+    }
 
-        function deleteItem(itemId) {
-            itemToDelete = itemId;
+    function deleteItem(itemId) {
+        itemToDelete = itemId;
+        toggleDeleteItemModal();
+    }
+
+    function toggleDeleteItemModal() {
+        const modal = document.getElementById('delete-item-modal');
+        modal.classList.toggle('hidden');
+        if (modal.classList.contains('hidden')) {
+            itemToDelete = null;
+        }
+    }
+
+    function confirmDeleteItem() {
+        if (itemToDelete) {
+            vaultData = vaultData.filter(item => item.itemId !== itemToDelete);
+            localStorage.setItem('sustainVault', JSON.stringify(vaultData));
+            renderVault();
+            updateStats();
+            syncToAWS();
             toggleDeleteItemModal();
         }
+    }
 
-        function toggleDeleteItemModal() {
-            const modal = document.getElementById('delete-item-modal');
-            modal.classList.toggle('hidden');
-            if (modal.classList.contains('hidden')) {
-                itemToDelete = null;
-            }
-        }
+    function updateStats() {
+        const repaired = vaultData.filter(i => i.type === 'repair').length;
+        const replaced = vaultData.filter(i => i.type === 'replace').length;
+        const total = repaired + replaced;
+        const co2Saved = repaired * 10; 
+        document.getElementById('co2-stat').innerText = `${co2Saved} kg`;
+        document.getElementById('dash-repaired').innerText = repaired;
+        document.getElementById('dash-replaced').innerText = replaced;
+        const score = total === 0 ? 0 : Math.round((repaired / total) * 100);
+        document.getElementById('impact-bar').style.width = `${score}%`;
+        document.getElementById('impact-percent').innerText = `${score}% Sustainability Score`;
+    }
 
-        function confirmDeleteItem() {
-            if (itemToDelete) {
-                vaultData = vaultData.filter(item => item.itemId !== itemToDelete);
-                localStorage.setItem('sustainVault', JSON.stringify(vaultData));
-                renderVault();
-                updateStats();
-                syncToAWS();
-                toggleDeleteItemModal();
-            }
-        }
+    function toggleNotifications() {
+        const toggle = document.getElementById('notify-toggle');
+        if (toggle.checked) {
+            if (!("Notification" in window)) { alert("Not supported."); toggle.checked = false; return; }
+            Notification.requestPermission().then(p => {
+                if (p === "granted") { checkForDueMaintenance(); localStorage.setItem('notificationsEnabled', 'true'); }
+                else { toggle.checked = false; localStorage.setItem('notificationsEnabled', 'false'); }
+            });
+        } else localStorage.setItem('notificationsEnabled', 'false');
+    }
 
-        function updateStats() {
-            const repaired = vaultData.filter(i => i.type === 'repair').length;
-            const replaced = vaultData.filter(i => i.type === 'replace').length;
-            const total = repaired + replaced;
-            const co2Saved = repaired * 10; 
-            document.getElementById('co2-stat').innerText = `${co2Saved} kg`;
-            document.getElementById('dash-repaired').innerText = repaired;
-            document.getElementById('dash-replaced').innerText = replaced;
-            const score = total === 0 ? 0 : Math.round((repaired / total) * 100);
-            document.getElementById('impact-bar').style.width = `${score}%`;
-            document.getElementById('impact-percent').innerText = `${score}% Sustainability Score`;
-        }
+    function checkForDueMaintenance() {
+        if (Notification.permission !== "granted") return;
+        const sixMonthsAgo = new Date(); sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        vaultData.forEach(item => {
+            if (new Date(item.date) < sixMonthsAgo) sendLocalNotification(item);
+        });
+    }
 
-        function toggleNotifications() {
-            const toggle = document.getElementById('notify-toggle');
-            if (toggle.checked) {
-                if (!("Notification" in window)) { alert("Not supported."); toggle.checked = false; return; }
-                Notification.requestPermission().then(p => {
-                    if (p === "granted") { checkForDueMaintenance(); localStorage.setItem('notificationsEnabled', 'true'); }
-                    else { toggle.checked = false; localStorage.setItem('notificationsEnabled', 'false'); }
+    function sendLocalNotification(item) {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(reg => {
+                reg.showNotification('Maintenance Due', {
+                    body: `Your ${item.name} (${item.part}) is due for service.`,
+                    icon: 'icon-192.png',
+                    tag: `maint-${item.id}`,
+                    actions: [{ action: 'view', title: 'View Details' }]
                 });
-            } else localStorage.setItem('notificationsEnabled', 'false');
-        }
-
-        function checkForDueMaintenance() {
-            if (Notification.permission !== "granted") return;
-            const sixMonthsAgo = new Date(); sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-            vaultData.forEach(item => {
-                if (new Date(item.date) < sixMonthsAgo) sendLocalNotification(item);
             });
         }
+    }
 
-        function sendLocalNotification(item) {
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.ready.then(reg => {
-                    reg.showNotification('Maintenance Due', {
-                        body: `Your ${item.name} (${item.part}) is due for service.`,
-                        icon: 'icon-192.png',
-                        tag: `maint-${item.id}`,
-                        actions: [{ action: 'view', title: 'View Details' }]
-                    });
+    function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('header button').forEach(b => {
+            b.classList.remove('tab-active', 'text-blue-400');
+            b.classList.add('hover:text-gray-300');
+        });
+        document.getElementById(`tab-${tab}`).classList.add('tab-active', 'text-blue-400');
+
+        if (tab === 'dashboard') {
+            document.getElementById('vault-list').classList.remove('hidden');
+            document.getElementById('dashboard-view').classList.remove('hidden');
+            document.getElementById('input-form').classList.remove('hidden');
+        } else {
+            document.getElementById('vault-list').classList.remove('hidden');
+            document.getElementById('dashboard-view').classList.add('hidden');
+            document.getElementById('input-form').classList.add('hidden');
+        }
+
+        renderVault();
+    }
+
+    function toggleForm() {
+        const form = document.getElementById('input-form');
+        form.classList.toggle('hidden');
+        if(!form.classList.contains('hidden')) {
+            document.getElementById('itemCategory').value = currentTab === 'vehicle' ? 'Vehicle' : 'Property';
+        }
+    }
+
+    function toggleSettingsModal() {
+        const modal = document.getElementById('settings-modal');
+        modal.classList.toggle('hidden');
+    }
+
+    function toggleDeleteAccountModal() {
+        const modal = document.getElementById('delete-account-modal');
+        modal.classList.toggle('hidden');
+        if (!modal.classList.contains('hidden')) {
+            document.getElementById('delete-confirm-input').value = '';
+            document.getElementById('delete-confirm-btn').disabled = true;
+        }
+    }
+
+    function exportToCSV() {
+        if (vaultData.length === 0) {
+            alert("No data to export.");
+            return;
+        }
+
+        const headers = ['itemId', 'assetName', 'name', 'category', 'part', 'type', 'notes', 'date', 'updatedAt'];
+        const csvRows = [headers.join(',')];
+
+        vaultData.forEach(item => {
+            const values = headers.map(header => {
+                const val = item[header] || '';
+                const escaped = ('' + val).replace(/"/g, '""');
+                return `"${escaped}"`;
+            });
+            csvRows.push(values.join(','));
+        });
+
+        const csvString = csvRows.join('\n');
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const date = new Date().toISOString().split('T')[0];
+
+        link.setAttribute('href', url);
+        link.setAttribute('download', `MaintenanceVault_Backup_${date}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function togglePasswordVisibility(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+
+    function clearAuthStatus() {
+        const statusMsg = document.getElementById('auth-status-msg');
+        statusMsg.classList.add('hidden');
+        statusMsg.innerText = '';
+    }
+
+    function showAuthStatus(msg, isError = true) {
+        const statusMsg = document.getElementById('auth-status-msg');
+        statusMsg.innerText = msg;
+        statusMsg.classList.remove('hidden', 'bg-red-900/50', 'text-red-400', 'bg-green-900/50', 'text-green-400');
+        statusMsg.classList.add(isError ? 'bg-red-900/50' : 'bg-green-900/50', isError ? 'text-red-400' : 'text-green-400');
+    }
+
+    function switchAuthMode(mode) {
+        authMode = mode;
+        const authForm = document.getElementById('auth-form');
+        const authTabs = document.getElementById('auth-tabs');
+        const verifyHeader = document.getElementById('verify-header');
+        const recoveryHeader = document.getElementById('recovery-header');
+        const tabSignin = document.getElementById('auth-tab-signin');
+        const tabSignup = document.getElementById('auth-tab-signup');
+
+        clearAuthStatus();
+
+        authTabs.classList.remove('hidden');
+        verifyHeader.classList.add('hidden');
+        recoveryHeader.classList.add('hidden');
+        tabSignin.className = "flex-1 py-4 text-xs font-bold uppercase tracking-widest transition-all";
+        tabSignup.className = "flex-1 py-4 text-xs font-bold uppercase tracking-widest transition-all";
+
+        let formHTML = '';
+
+        const emailField = (email = '', readonly = false) => `
+            <div>
+                <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Email Address</label>
+                <input type="email" name="email" id="auth-email" value="${email}" ${readonly ? 'readonly' : ''} autocomplete="username" required placeholder="name@email.com" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-600 outline-none transition-all">
+            </div>`;
+
+        const passwordField = (label = 'Password', id = 'auth-password', autocomplete = 'current-password') => `
+            <div>
+                <div class="flex justify-between items-center mb-1 ml-1">
+                    <label class="block text-[10px] text-gray-500 uppercase font-bold">${label}</label>
+                    ${mode === 'signin' ? '<button type="button" onclick="switchAuthMode(\'forgot_password\')" class="text-[10px] text-blue-500 hover:text-blue-400 font-bold uppercase">Forgot Password?</button>' : ''}
+                </div>
+                <div class="relative">
+                    <input type="password" name="${id === 'auth-password' ? 'password' : 'confirmPassword'}" id="${id}" autocomplete="${autocomplete}" required placeholder="••••••••" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-600 outline-none transition-all pr-10">
+                    <button type="button" onclick="togglePasswordVisibility('${id}', '${id}-toggle-icon')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-300">
+                        <i id="${id}-toggle-icon" class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>`;
+
+        const codeField = `
+            <div>
+                <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Verification Code</label>
+                <input type="text" name="code" id="auth-code" autocomplete="one-time-code" required placeholder="123456" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-600 outline-none transition-all">
+            </div>`;
+
+        const submitButton = (text) => `
+            <button type="submit" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                <span>${text}</span>
+                <i class="fas fa-chevron-right text-xs"></i>
+            </button>`;
+
+        let currentEmail = document.getElementById('auth-email')?.value || '';
+        currentEmail = currentEmail.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+        if (mode === 'signin') {
+            tabSignin.classList.add('text-yellow-500', 'border-b-2', 'border-yellow-500');
+            tabSignup.classList.add('text-gray-500', 'hover:text-gray-300');
+            formHTML = emailField(currentEmail) + passwordField() + submitButton('SIGN IN');
+        } else if (mode === 'signup') {
+            tabSignup.classList.add('text-yellow-500', 'border-b-2', 'border-yellow-500');
+            tabSignin.classList.add('text-gray-500', 'hover:text-gray-300');
+            formHTML = emailField(currentEmail) + passwordField('Password', 'auth-password', 'new-password') + passwordField('Confirm Password', 'auth-confirm-password', 'new-password') + submitButton('CREATE ACCOUNT');
+        } else if (mode === 'confirm') {
+            authTabs.classList.add('hidden');
+            verifyHeader.classList.remove('hidden');
+            formHTML = emailField(currentEmail, true) + codeField + submitButton('VERIFY CODE');
+        } else if (mode === 'forgot_password') {
+            authTabs.classList.add('hidden');
+            recoveryHeader.classList.remove('hidden');
+            formHTML = emailField(currentEmail) + submitButton('SEND RECOVERY CODE');
+        } else if (mode === 'reset_password') {
+            authTabs.classList.add('hidden');
+            recoveryHeader.classList.remove('hidden');
+            formHTML = emailField(currentEmail, true) + codeField + passwordField('New Password', 'auth-password', 'new-password') + passwordField('Confirm New Password', 'auth-confirm-password', 'new-password') + submitButton('RESET PASSWORD');
+        }
+
+        authForm.innerHTML = formHTML;
+    }
+
+    function handleAuthSubmit(event) {
+        if (event) event.preventDefault();
+        const formData = new FormData(document.getElementById('auth-form'));
+        const email = formData.get('email');
+        const password = formData.get('password');
+        const confirmPassword = formData.get('confirmPassword');
+        const code = formData.get('code');
+
+        if (!email) return showAuthStatus("Email is required");
+
+        try {
+            if (authMode === 'signin') {
+                if (!password) return showAuthStatus("Password is required");
+                const authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails({ Username: email, Password: password });
+                const cognitoUser = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool });
+                
+                cognitoUser.authenticateUser(authenticationDetails, {
+                    onSuccess: (result) => {
+                        checkAuthState();
+                    },
+                    onFailure: (err) => {
+                        showAuthStatus(err.message || "Sign in failed");
+                    }
                 });
             }
-        }
+            else if (authMode === 'signup') {
+                if (!password) return showAuthStatus("Password is required");
+                if (password !== confirmPassword) return showAuthStatus("Passwords do not match");
 
-        function switchTab(tab) {
-            currentTab = tab;
-            document.querySelectorAll('header button').forEach(b => {
-                b.classList.remove('tab-active', 'text-blue-400');
-                b.classList.add('hover:text-gray-300');
-            });
-            document.getElementById(`tab-${tab}`).classList.add('tab-active', 'text-blue-400');
+                const attributeList = [
+                    new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'email', Value: email }),
+                    new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'name', Value: 'Test User' }),
+                    new AmazonCognitoIdentity.CognitoUserAttribute({ Name: 'custom:tier', Value: 'Free' })
+                ];
 
-            if (tab === 'dashboard') {
-                document.getElementById('vault-list').classList.remove('hidden');
-                document.getElementById('dashboard-view').classList.remove('hidden');
-                document.getElementById('input-form').classList.remove('hidden');
-            } else {
-                document.getElementById('vault-list').classList.remove('hidden');
-                document.getElementById('dashboard-view').classList.add('hidden');
-                document.getElementById('input-form').classList.add('hidden');
-            }
-
-            renderVault();
-        }
-
-        function toggleForm() {
-            const form = document.getElementById('input-form');
-            form.classList.toggle('hidden');
-            if(!form.classList.contains('hidden')) {
-                document.getElementById('itemCategory').value = currentTab === 'vehicle' ? 'Vehicle' : 'Property';
-            }
-        }
-
-        function toggleSettingsModal() {
-            const modal = document.getElementById('settings-modal');
-            modal.classList.toggle('hidden');
-        }
-
-        function toggleDeleteAccountModal() {
-            const modal = document.getElementById('delete-account-modal');
-            modal.classList.toggle('hidden');
-            if (!modal.classList.contains('hidden')) {
-                document.getElementById('delete-confirm-input').value = '';
-                document.getElementById('delete-confirm-btn').disabled = true;
-            }
-        }
-
-        function exportToCSV() {
-            if (vaultData.length === 0) {
-                alert("No data to export.");
-                return;
-            }
-
-            const headers = ['itemId', 'assetName', 'name', 'category', 'part', 'type', 'notes', 'date', 'updatedAt'];
-            const csvRows = [headers.join(',')];
-
-            vaultData.forEach(item => {
-                const values = headers.map(header => {
-                    const val = item[header] || '';
-                    const escaped = ('' + val).replace(/"/g, '""');
-                    return `"${escaped}"`;
-                });
-                csvRows.push(values.join(','));
-            });
-
-            const csvString = csvRows.join('\n');
-            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            const date = new Date().toISOString().split('T')[0];
-
-            link.setAttribute('href', url);
-            link.setAttribute('download', `MaintenanceVault_Backup_${date}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function togglePasswordVisibility(inputId, iconId) {
-            const input = document.getElementById(inputId);
-            const icon = document.getElementById(iconId);
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                input.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
-        }
-
-        function clearAuthStatus() {
-            const statusMsg = document.getElementById('auth-status-msg');
-            statusMsg.classList.add('hidden');
-            statusMsg.innerText = '';
-        }
-
-        function showAuthStatus(msg, isError = true) {
-            const statusMsg = document.getElementById('auth-status-msg');
-            statusMsg.innerText = msg;
-            statusMsg.classList.remove('hidden', 'bg-red-900/50', 'text-red-400', 'bg-green-900/50', 'text-green-400');
-            statusMsg.classList.add(isError ? 'bg-red-900/50' : 'bg-green-900/50', isError ? 'text-red-400' : 'text-green-400');
-        }
-
-        function switchAuthMode(mode) {
-            authMode = mode;
-            const authForm = document.getElementById('auth-form');
-            const authTabs = document.getElementById('auth-tabs');
-            const verifyHeader = document.getElementById('verify-header');
-            const recoveryHeader = document.getElementById('recovery-header');
-            const tabSignin = document.getElementById('auth-tab-signin');
-            const tabSignup = document.getElementById('auth-tab-signup');
-
-            clearAuthStatus();
-
-            authTabs.classList.remove('hidden');
-            verifyHeader.classList.add('hidden');
-            recoveryHeader.classList.add('hidden');
-            tabSignin.className = "flex-1 py-4 text-xs font-bold uppercase tracking-widest transition-all";
-            tabSignup.className = "flex-1 py-4 text-xs font-bold uppercase tracking-widest transition-all";
-
-            let formHTML = '';
-
-            const emailField = (email = '', readonly = false) => `
-                <div>
-                    <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Email Address</label>
-                    <input type="email" name="email" id="auth-email" value="${email}" ${readonly ? 'readonly' : ''} autocomplete="username" required placeholder="name@email.com" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-600 outline-none transition-all">
-                </div>`;
-
-            const passwordField = (label = 'Password', id = 'auth-password', autocomplete = 'current-password') => `
-                <div>
-                    <div class="flex justify-between items-center mb-1 ml-1">
-                        <label class="block text-[10px] text-gray-500 uppercase font-bold">${label}</label>
-                        ${mode === 'signin' ? '<button type="button" onclick="switchAuthMode(\'forgot_password\')" class="text-[10px] text-blue-500 hover:text-blue-400 font-bold uppercase">Forgot Password?</button>' : ''}
-                    </div>
-                    <div class="relative">
-                        <input type="password" name="${id === 'auth-password' ? 'password' : 'confirmPassword'}" id="${id}" autocomplete="${autocomplete}" required placeholder="••••••••" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-600 outline-none transition-all pr-10">
-                        <button type="button" onclick="togglePasswordVisibility('${id}', '${id}-toggle-icon')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-300">
-                            <i id="${id}-toggle-icon" class="fas fa-eye"></i>
-                        </button>
-                    </div>
-                </div>`;
-
-            const codeField = `
-                <div>
-                    <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Verification Code</label>
-                    <input type="text" name="code" id="auth-code" autocomplete="one-time-code" required placeholder="123456" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-600 outline-none transition-all">
-                </div>`;
-
-            const submitButton = (text) => `
-                <button type="submit" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
-                    <span>${text}</span>
-                    <i class="fas fa-chevron-right text-xs"></i>
-                </button>`;
-
-            let currentEmail = document.getElementById('auth-email')?.value || '';
-            currentEmail = currentEmail.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-
-            if (mode === 'signin') {
-                tabSignin.classList.add('text-yellow-500', 'border-b-2', 'border-yellow-500');
-                tabSignup.classList.add('text-gray-500', 'hover:text-gray-300');
-                formHTML = emailField(currentEmail) + passwordField() + submitButton('SIGN IN');
-            } else if (mode === 'signup') {
-                tabSignup.classList.add('text-yellow-500', 'border-b-2', 'border-yellow-500');
-                tabSignin.classList.add('text-gray-500', 'hover:text-gray-300');
-                formHTML = emailField(currentEmail) + passwordField('Password', 'auth-password', 'new-password') + passwordField('Confirm Password', 'auth-confirm-password', 'new-password') + submitButton('CREATE ACCOUNT');
-            } else if (mode === 'confirm') {
-                authTabs.classList.add('hidden');
-                verifyHeader.classList.remove('hidden');
-                formHTML = emailField(currentEmail, true) + codeField + submitButton('VERIFY CODE');
-            } else if (mode === 'forgot_password') {
-                authTabs.classList.add('hidden');
-                recoveryHeader.classList.remove('hidden');
-                formHTML = emailField(currentEmail) + submitButton('SEND RECOVERY CODE');
-            } else if (mode === 'reset_password') {
-                authTabs.classList.add('hidden');
-                recoveryHeader.classList.remove('hidden');
-                formHTML = emailField(currentEmail, true) + codeField + passwordField('New Password', 'auth-password', 'new-password') + passwordField('Confirm New Password', 'auth-confirm-password', 'new-password') + submitButton('RESET PASSWORD');
-            }
-
-            authForm.innerHTML = formHTML;
-        }
-
-        async function handleAuthSubmit(event) {
-            if (event) event.preventDefault();
-            const formData = new FormData(document.getElementById('auth-form'));
-            const email = formData.get('email');
-            const password = formData.get('password');
-            const confirmPassword = formData.get('confirmPassword');
-            const code = formData.get('code');
-
-            if (!email) return showAuthStatus("Email is required");
-
-            try {
-                if (authMode === 'signin') {
-                    if (!password) return showAuthStatus("Password is required");
-                    const user = await Auth.signIn(email, password);
-                    console.log("Logged in:", user);
-                    await checkAuthState();
-                }
-                else if (authMode === 'signup') {
-                    if (!password) return showAuthStatus("Password is required");
-                    if (password !== confirmPassword) return showAuthStatus("Passwords do not match");
-
-                    await Auth.signUp({
-                        username: email,
-                        password,
-                        attributes: {
-                            email,
-                            'name': 'Test User',
-                            'custom:tier': 'Free'
-                        }
-                    });
-
+                userPool.signUp(email, password, attributeList, null, (err, result) => {
+                    if (err) return showAuthStatus(err.message || "Sign up failed");
                     switchAuthMode('confirm');
                     showAuthStatus("Verification code sent to email", false);
-                }
-                else if (authMode === 'confirm') {
-                    if (!code) return showAuthStatus("Verification code is required");
-                    await Auth.confirmSignUp(email, code);
+                });
+            }
+            else if (authMode === 'confirm') {
+                if (!code) return showAuthStatus("Verification code is required");
+                const cognitoUser = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool });
+                cognitoUser.confirmRegistration(code, true, (err, result) => {
+                    if (err) return showAuthStatus(err.message || "Verification failed");
                     switchAuthMode('signin');
                     showAuthStatus("Account verified! You can now sign in.", false);
-                }
-                else if (authMode === 'forgot_password') {
-                    await Auth.forgotPassword(email);
-                    switchAuthMode('reset_password');
-                    showAuthStatus("Recovery code sent to your email", false);
-                }
-                else if (authMode === 'reset_password') {
-                    if (!code) return showAuthStatus("Verification code is required");
-                    if (!password) return showAuthStatus("New Password is required");
-                    if (password !== confirmPassword) return showAuthStatus("Passwords do not match");
-                    await Auth.forgotPasswordSubmit(email, code, password);
-                    switchAuthMode('signin');
-                    showAuthStatus("Password reset successful! Please sign in.", false);
-                }
-            } catch (error) {
-                console.error("Auth error:", error);
-                showAuthStatus(error.message || "An error occurred");
+                });
             }
+            else if (authMode === 'forgot_password') {
+                const cognitoUser = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool });
+                cognitoUser.forgotPassword({
+                    onSuccess: (data) => {},
+                    onFailure: (err) => showAuthStatus(err.message || "Failed to send code"),
+                    inputVerificationCode: (data) => {
+                        switchAuthMode('reset_password');
+                        showAuthStatus("Recovery code sent to your email", false);
+                    }
+                });
+            }
+            else if (authMode === 'reset_password') {
+                if (!code) return showAuthStatus("Verification code is required");
+                if (!password) return showAuthStatus("New Password is required");
+                if (password !== confirmPassword) return showAuthStatus("Passwords do not match");
+                
+                const cognitoUser = new AmazonCognitoIdentity.CognitoUser({ Username: email, Pool: userPool });
+                cognitoUser.confirmPassword(code, password, {
+                    onSuccess: () => {
+                        switchAuthMode('signin');
+                        showAuthStatus("Password reset successful! Please sign in.", false);
+                    },
+                    onFailure: (err) => {
+                        showAuthStatus(err.message || "Password reset failed");
+                    }
+                });
+            }
+        } catch (error) {
+            console.error("Auth error:", error);
+            showAuthStatus(error.message || "An error occurred");
         }
+    }
 
-        async function checkAuthState() {
-            try {
-                const user = await Auth.currentAuthenticatedUser();
-                currentUser = user;
+    function checkAuthState() {
+        const cognitoUser = userPool.getCurrentUser();
+        
+        if (cognitoUser != null) {
+            cognitoUser.getSession((err, session) => {
+                if (err) {
+                    handleAuthFailure(err);
+                    return;
+                }
+                
+                currentUser = cognitoUser;
 
                 // Show App UI Immediately
                 const showElements = ['dashboard', 'nav-tabs', 'add-item-btn', 'user-display', 'danger-zone'];
@@ -846,190 +861,184 @@
                     if (el) el.classList.remove('hidden');
                 });
 
-                // Hide Auth UI Immediately
+                // Hide Auth UI
                 const hideElements = ['auth-section', 'login-btn'];
                 hideElements.forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.classList.add('hidden');
                 });
 
-                // Nested try-catch for non-critical data fetching
-                try {
-                    const attributes = await Auth.userAttributes(user);
-                    const tierAttr = attributes.find(a => a.Name === 'custom:tier');
-                    const emailAttr = attributes.find(a => a.Name === 'email');
-                    currentUser.tier = tierAttr ? tierAttr.Value : 'Free';
+                cognitoUser.getUserAttributes((err, attributes) => {
+                    if (!err && attributes) {
+                        const tierAttr = attributes.find(a => a.getName() === 'custom:tier');
+                        const emailAttr = attributes.find(a => a.getName() === 'email');
+                        const subAttr = attributes.find(a => a.getName() === 'sub');
+                        
+                        currentUser.tier = tierAttr ? tierAttr.getValue() : 'Free';
 
-                    if (typeof Purchases !== 'undefined' && user.attributes && user.attributes.sub) {
-                        Purchases.Purchases.configure(REVENUECAT_PUBLIC_API_KEY, user.attributes.sub);
-                        await updateTierFromRevenueCat();
-                    }
+                        if (typeof Purchases !== 'undefined' && subAttr) {
+                            Purchases.Purchases.configure(REVENUECAT_PUBLIC_API_KEY, subAttr.getValue());
+                            updateTierFromRevenueCat();
+                        }
 
-                    const userEmailElem = document.getElementById('user-email');
-                    if (userEmailElem) {
-                        userEmailElem.innerText = emailAttr ? emailAttr.Value : (user.attributes ? user.attributes.email : '');
+                        const userEmailElem = document.getElementById('user-email');
+                        if (userEmailElem) {
+                            userEmailElem.innerText = emailAttr ? emailAttr.getValue() : cognitoUser.getUsername();
+                        }
                     }
-                } catch (dataError) {
-                    console.error("Non-critical data fetching failed:", dataError);
-                    const userEmailElem = document.getElementById('user-email');
-                    if (userEmailElem && user.attributes && user.attributes.email) {
-                        userEmailElem.innerText = user.attributes.email;
-                    }
-                }
+                });
 
                 renderVault();
                 updateStats();
                 syncToAWS();
-            } catch (e) {
-                currentUser = null;
-
-                // Hide App UI
-                const hideElements = ['dashboard', 'nav-tabs', 'add-item-btn', 'user-display', 'danger-zone'];
-                hideElements.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.classList.add('hidden');
-                });
-
-                // Show Auth UI
-                const showElements = ['auth-section', 'login-btn'];
-                showElements.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.classList.remove('hidden');
-                });
-
-                switchAuthMode('signin');
-                renderVault();
-                updateStats();
-            }
+            });
+        } else {
+            handleAuthFailure(new Error("No user found"));
         }
+    }
 
-        async function updateTierFromRevenueCat() {
-            try {
-                const customerInfo = await Purchases.Purchases.getCustomerInfo();
-                if (customerInfo.entitlements.active['Premium']) {
-                    currentUser.tier = 'Pro';
-                } else {
-                    currentUser.tier = 'Free';
-                }
-            } catch (e) {
-                console.error("RevenueCat Error:", e);
-            }
-        }
-
-        function joinProComWaitlist() {
-            window.location.href = "mailto:support@maintenancevault.com?subject=ProCom Waitlist Interest&body=I am interested in the ProCom tier for fleets and crews. Please notify me when it's available.";
-        }
-
-        function togglePaywall() {
-            if (!currentUser) {
-                alert("Please sign in first to manage subscriptions.");
-                return;
-            }
-            const modal = document.getElementById('paywall-modal');
-            modal.classList.toggle('hidden');
-
-            if (!modal.classList.contains('hidden')) {
-                const freeBtn = document.getElementById('paywall-free-btn');
-                const proBtn = document.getElementById('paywall-pro-btn');
-                const tier = currentUser.tier || 'Free';
-
-                freeBtn.disabled = false;
-                freeBtn.innerText = "Switch to Free";
-                freeBtn.className = "w-full py-3 px-4 rounded-xl font-bold transition-all bg-gray-700 text-white hover:bg-gray-600 uppercase text-[10px] tracking-widest";
-
-                proBtn.disabled = false;
-                proBtn.innerText = "Upgrade to Pro";
-                proBtn.className = "w-full py-4 px-4 rounded-xl font-bold transition-all bg-blue-600 hover:bg-blue-500 text-white shadow-lg active:scale-95 uppercase text-[10px] tracking-widest";
-
-                if (tier === 'Free') {
-                    freeBtn.disabled = true;
-                    freeBtn.innerText = "Current Plan";
-                    freeBtn.className = "w-full py-3 px-4 rounded-xl font-bold transition-all bg-gray-700 text-gray-500 cursor-not-allowed uppercase text-[10px] tracking-widest";
-                } else if (tier === 'Pro') {
-                    proBtn.disabled = true;
-                    proBtn.innerText = "Current Plan";
-                    proBtn.className = "w-full py-4 px-4 rounded-xl font-bold transition-all bg-blue-900/50 text-blue-400 cursor-not-allowed uppercase text-[10px] tracking-widest";
-                }
-            }
-        }
-
-        async function handleUpgrade() {
-            const isAndroidTWA = window.matchMedia('(display-mode: standalone)').matches && /android/i.test(navigator.userAgent);
-            try {
-                if (isAndroidTWA && 'getDigitalGoodsService' in window) {
-                    const service = await window.getDigitalGoodsService('https://play.google.com/billing');
-                    const details = await service.getDetails(['pro_subscription']);
-                    const paymentMethods = [{ supportedMethods: 'https://play.google.com/billing', data: { sku: 'pro_subscription' } }];
-                    const paymentDetails = { total: { label: 'Total', amount: { currency: 'USD', value: '49.99' } } };
-                    const request = new PaymentRequest(paymentMethods, paymentDetails);
-                    const response = await request.show();
-                    await Purchases.Purchases.syncPurchases();
-                    await response.complete('success');
-                } else {
-                    const offerings = await Purchases.Purchases.getOfferings();
-                    if (offerings.current && offerings.current.availablePackages.length > 0) {
-                        const packageToBuy = offerings.current.availablePackages[0];
-                        await Purchases.Purchases.purchasePackage(packageToBuy);
-                    } else {
-                        throw new Error("No products available for purchase.");
-                    }
-                }
-                await updateTierFromRevenueCat();
-                if (currentUser.tier === 'Pro') {
-                    alert("Welcome to Pro! Your sync features are now active.");
-                    togglePaywall();
-                }
-            } catch (error) {
-                console.error("Upgrade Error:", error);
-                alert("Purchase failed: " + error.message);
-            }
-        }
-
-        async function handleAccountDeletion() {
-            const btn = document.getElementById('delete-confirm-btn');
-            const originalText = btn.innerText;
-            try {
-                btn.disabled = true;
-                btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> DELETING...`;
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                alert("Your account and data have been successfully deleted.");
-                toggleDeleteAccountModal();
-                toggleSettingsModal();
-                await handleSignOut();
-            } catch (error) {
-                console.error("Deletion Error:", error);
-                alert("An error occurred during account deletion.");
-                btn.disabled = false;
-                btn.innerText = originalText;
-            }
-        }
-
-        async function handleSignOut() {
-            try {
-                await Auth.signOut();
-                await checkAuthState();
-            } catch (error) {
-                console.error("Sign out error:", error);
-            }
-        }
-
-        // Initialize App
-        checkAuthState(); // Notice: No 'await' anymore!
-        
-        const isEnabled = localStorage.getItem('notificationsEnabled') === 'true';
-        document.getElementById('notify-toggle').checked = isEnabled;
-        if (isEnabled) checkForDueMaintenance();
-        if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
-
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('itemDate').value = today;
-
-        document.getElementById('delete-confirm-input').addEventListener('input', (e) => {
-            const btn = document.getElementById('delete-confirm-btn');
-            btn.disabled = e.target.value.toUpperCase() !== 'DELETE';
+    function handleAuthFailure(e) {
+        currentUser = null;
+        const hideElements = ['dashboard', 'nav-tabs', 'add-item-btn', 'user-display', 'danger-zone'];
+        hideElements.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
         });
 
-        document.getElementById('input-form').addEventListener('submit', addItem);
-    </script>
-</body>
-</html>
+        const showElements = ['auth-section', 'login-btn'];
+        showElements.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('hidden');
+        });
+
+        switchAuthMode('signin');
+        renderVault();
+        updateStats();
+    }
+
+    async function updateTierFromRevenueCat() {
+        try {
+            const customerInfo = await Purchases.Purchases.getCustomerInfo();
+            if (customerInfo.entitlements.active['Premium']) {
+                currentUser.tier = 'Pro';
+            } else {
+                currentUser.tier = 'Free';
+            }
+        } catch (e) {
+            console.error("RevenueCat Error:", e);
+        }
+    }
+
+    function joinProComWaitlist() {
+        window.location.href = "mailto:support@maintenancevault.com?subject=ProCom Waitlist Interest&body=I am interested in the ProCom tier for fleets and crews. Please notify me when it's available.";
+    }
+
+    function togglePaywall() {
+        if (!currentUser) {
+            alert("Please sign in first to manage subscriptions.");
+            return;
+        }
+        const modal = document.getElementById('paywall-modal');
+        modal.classList.toggle('hidden');
+
+        if (!modal.classList.contains('hidden')) {
+            const freeBtn = document.getElementById('paywall-free-btn');
+            const proBtn = document.getElementById('paywall-pro-btn');
+            const tier = currentUser.tier || 'Free';
+
+            freeBtn.disabled = false;
+            freeBtn.innerText = "Switch to Free";
+            freeBtn.className = "w-full py-3 px-4 rounded-xl font-bold transition-all bg-gray-700 text-white hover:bg-gray-600 uppercase text-[10px] tracking-widest";
+
+            proBtn.disabled = false;
+            proBtn.innerText = "Upgrade to Pro";
+            proBtn.className = "w-full py-4 px-4 rounded-xl font-bold transition-all bg-blue-600 hover:bg-blue-500 text-white shadow-lg active:scale-95 uppercase text-[10px] tracking-widest";
+
+            if (tier === 'Free') {
+                freeBtn.disabled = true;
+                freeBtn.innerText = "Current Plan";
+                freeBtn.className = "w-full py-3 px-4 rounded-xl font-bold transition-all bg-gray-700 text-gray-500 cursor-not-allowed uppercase text-[10px] tracking-widest";
+            } else if (tier === 'Pro') {
+                proBtn.disabled = true;
+                proBtn.innerText = "Current Plan";
+                proBtn.className = "w-full py-4 px-4 rounded-xl font-bold transition-all bg-blue-900/50 text-blue-400 cursor-not-allowed uppercase text-[10px] tracking-widest";
+            }
+        }
+    }
+
+    async function handleUpgrade() {
+        const isAndroidTWA = window.matchMedia('(display-mode: standalone)').matches && /android/i.test(navigator.userAgent);
+        try {
+            if (isAndroidTWA && 'getDigitalGoodsService' in window) {
+                const service = await window.getDigitalGoodsService('https://play.google.com/billing');
+                const details = await service.getDetails(['pro_subscription']);
+                const paymentMethods = [{ supportedMethods: 'https://play.google.com/billing', data: { sku: 'pro_subscription' } }];
+                const paymentDetails = { total: { label: 'Total', amount: { currency: 'USD', value: '49.99' } } };
+                const request = new PaymentRequest(paymentMethods, paymentDetails);
+                const response = await request.show();
+                await Purchases.Purchases.syncPurchases();
+                await response.complete('success');
+            } else {
+                const offerings = await Purchases.Purchases.getOfferings();
+                if (offerings.current && offerings.current.availablePackages.length > 0) {
+                    const packageToBuy = offerings.current.availablePackages[0];
+                    await Purchases.Purchases.purchasePackage(packageToBuy);
+                } else {
+                    throw new Error("No products available for purchase.");
+                }
+            }
+            await updateTierFromRevenueCat();
+            if (currentUser.tier === 'Pro') {
+                alert("Welcome to Pro! Your sync features are now active.");
+                togglePaywall();
+            }
+        } catch (error) {
+            console.error("Upgrade Error:", error);
+            alert("Purchase failed: " + error.message);
+        }
+    }
+
+    async function handleAccountDeletion() {
+        const btn = document.getElementById('delete-confirm-btn');
+        const originalText = btn.innerText;
+        try {
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> DELETING...`;
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            alert("Your account and data have been successfully deleted.");
+            toggleDeleteAccountModal();
+            toggleSettingsModal();
+            handleSignOut();
+        } catch (error) {
+            console.error("Deletion Error:", error);
+            alert("An error occurred during account deletion.");
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
+    }
+
+    function handleSignOut() {
+        if (currentUser) {
+            currentUser.signOut();
+        }
+        checkAuthState();
+    }
+
+    // Initialize App
+    checkAuthState();
+    
+    const isEnabled = localStorage.getItem('notificationsEnabled') === 'true';
+    document.getElementById('notify-toggle').checked = isEnabled;
+    if (isEnabled) checkForDueMaintenance();
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('itemDate').value = today;
+
+    document.getElementById('delete-confirm-input').addEventListener('input', (e) => {
+        const btn = document.getElementById('delete-confirm-btn');
+        btn.disabled = e.target.value.toUpperCase() !== 'DELETE';
+    });
+
+    document.getElementById('input-form').addEventListener('submit', addItem);
+</script>
