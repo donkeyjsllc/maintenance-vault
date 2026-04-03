@@ -754,59 +754,53 @@
             statusMsg.classList.remove('hidden', 'bg-red-900/50', 'text-red-400', 'bg-green-900/50', 'text-green-400');
             statusMsg.classList.add(isError ? 'bg-red-900/50' : 'bg-green-900/50', isError ? 'text-red-400' : 'text-green-400');
         }
+async function checkAuthState() {
+            try {
+                const user = await Auth.currentAuthenticatedUser();
+                currentUser = user;
 
-        function switchAuthMode(mode) {
-            authMode = mode;
-            const authForm = document.getElementById('auth-form');
-            const authTabs = document.getElementById('auth-tabs');
-            const verifyHeader = document.getElementById('verify-header');
-            const recoveryHeader = document.getElementById('recovery-header');
-            const tabSignin = document.getElementById('auth-tab-signin');
-            const tabSignup = document.getElementById('auth-tab-signup');
+                // Show App UI Immediately
+                const showElements = ['dashboard', 'nav-tabs', 'add-item-btn', 'user-display', 'danger-zone'];
+                showElements.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.remove('hidden');
+                });
 
-            clearAuthStatus();
+                // Hide Auth UI Immediately
+                const hideElements = ['auth-section', 'login-btn'];
+                hideElements.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.add('hidden');
+                });
 
-            // Reset Headers
-            authTabs.classList.remove('hidden');
-            verifyHeader.classList.add('hidden');
-            recoveryHeader.classList.add('hidden');
-            tabSignin.className = "flex-1 py-4 text-xs font-bold uppercase tracking-widest transition-all";
-            tabSignup.className = "flex-1 py-4 text-xs font-bold uppercase tracking-widest transition-all";
+                // Nested try-catch for non-critical data fetching
+                try {
+                    const attributes = await Auth.userAttributes(user);
+                    const tierAttr = attributes.find(a => a.Name === 'custom:tier');
+                    const emailAttr = attributes.find(a => a.Name === 'email');
+                    currentUser.tier = tierAttr ? tierAttr.Value : 'Free';
 
-            let formHTML = '';
+                    // Configure RevenueCat with Cognito sub
+                    if (typeof Purchases !== 'undefined' && user.attributes && user.attributes.sub) {
+                        Purchases.Purchases.configure(REVENUECAT_PUBLIC_API_KEY, user.attributes.sub);
+                        await window.updateTierFromRevenueCat();
+                    }
 
-            const emailField = (email = '', readonly = false) => `
-                <div>
-                    <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Email Address</label>
-                    <input type="email" name="email" id="auth-email" value="${email}" ${readonly ? 'readonly' : ''} autocomplete="username" required placeholder="name@email.com" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-600 outline-none transition-all">
-                </div>`;
+                    const userEmailElem = document.getElementById('user-email');
+                    if (userEmailElem) {
+                        userEmailElem.innerText = emailAttr ? emailAttr.Value : (user.attributes ? user.attributes.email : '');
+                    }
+                } catch (dataError) {
+                    console.error("Non-critical data fetching failed:", dataError);
+                    const userEmailElem = document.getElementById('user-email');
+                    if (userEmailElem && user.attributes && user.attributes.email) {
+                        userEmailElem.innerText = user.attributes.email;
+                    }
+                }
 
-            const passwordField = (label = 'Password', id = 'auth-password', autocomplete = 'current-password') => `
-                <div>
-                    <div class="flex justify-between items-center mb-1 ml-1">
-                        <label class="block text-[10px] text-gray-500 uppercase font-bold">${label}</label>
-                        ${mode === 'signin' ? '<button type="button" onclick="switchAuthMode(\'forgot_password\')" class="text-[10px] text-blue-500 hover:text-blue-400 font-bold uppercase">Forgot Password?</button>' : ''}
-                    </div>
-                    <div class="relative">
-                        <input type="password" name="${id === 'auth-password' ? 'password' : 'confirmPassword'}" id="${id}" autocomplete="${autocomplete}" required placeholder="••••••••" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-600 outline-none transition-all pr-10">
-                        <button type="button" onclick="togglePasswordVisibility('${id}', '${id}-toggle-icon')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-300">
-                            <i id="${id}-toggle-icon" class="fas fa-eye"></i>
-                        </button>
-                    </div>
-                </div>`;
-
-            const codeField = `
-                <div>
-                    <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Verification Code</label>
-                    <input type="text" name="code" id="auth-code" autocomplete="one-time-code" required placeholder="123456" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-600 outline-none transition-all">
-                </div>`;
-
-            const submitButton = (text) => `
-                <button type="submit" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
-                    <span>${text}</span>
-                    <i class="fas fa-chevron-right text-xs"></i>
-                </button>`;
-
+                renderVault();
+                updateStats();
+                syncToAWS();
             } catch (e) {
                 currentUser = null;
 
@@ -825,6 +819,14 @@
                 });
 
                 switchAuthMode('signin');
+                renderVault();
+                updateStats();
+
+                // FORCE ERROR TO SCREEN (Must be after switchAuthMode)
+                const errorDetails = e.message || JSON.stringify(e) || String(e);
+                showAuthStatus("Auth Debug: " + errorDetails, true);
+            }
+        }                switchAuthMode('signin');
                 renderVault();
                 updateStats();
 
