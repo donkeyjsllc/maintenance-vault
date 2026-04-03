@@ -783,153 +783,6 @@ async function checkAuthState() {
                     // Configure RevenueCat with Cognito sub
                     if (typeof Purchases !== 'undefined' && user.attributes && user.attributes.sub) {
                         Purchases.Purchases.configure(REVENUECAT_PUBLIC_API_KEY, user.attributes.sub);
-                        await window.updateTierFromRevenueCat();
-                    }
-
-                    const userEmailElem = document.getElementById('user-email');
-                    if (userEmailElem) {
-                        userEmailElem.innerText = emailAttr ? emailAttr.Value : (user.attributes ? user.attributes.email : '');
-                    }
-                } catch (dataError) {
-                    console.error("Non-critical data fetching failed:", dataError);
-                    const userEmailElem = document.getElementById('user-email');
-                    if (userEmailElem && user.attributes && user.attributes.email) {
-                        userEmailElem.innerText = user.attributes.email;
-                    }
-                }
-
-                renderVault();
-                updateStats();
-                syncToAWS();
-            } catch (e) {
-                currentUser = null;
-
-                // Hide App UI
-                const hideElements = ['dashboard', 'nav-tabs', 'add-item-btn', 'user-display', 'danger-zone'];
-                hideElements.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.classList.add('hidden');
-                });
-
-                // Show Auth UI
-                const showElements = ['auth-section', 'login-btn'];
-                showElements.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.classList.remove('hidden');
-                });
-
-                switchAuthMode('signin');
-                renderVault();
-                updateStats();
-
-                // FORCE ERROR TO SCREEN (Must be after switchAuthMode)
-                const errorDetails = e.message || JSON.stringify(e) || String(e);
-                showAuthStatus("Auth Debug: " + errorDetails, true);
-            }
-        }                switchAuthMode('signin');
-                renderVault();
-                updateStats();
-
-                // FORCE ERROR TO SCREEN (Must be after switchAuthMode)
-                const errorDetails = e.message || JSON.stringify(e) || String(e);
-                showAuthStatus("Auth Debug: " + errorDetails, true);
-            }
-                authTabs.classList.add('hidden');
-                recoveryHeader.classList.remove('hidden');
-                formHTML = emailField(currentEmail, true) + codeField + passwordField('New Password', 'auth-password', 'new-password') + passwordField('Confirm New Password', 'auth-confirm-password', 'new-password') + submitButton('RESET PASSWORD');
-            }
-
-            authForm.innerHTML = formHTML;
-        }
-
-        async function handleAuthSubmit(event) {
-            if (event) event.preventDefault();
-            const formData = new FormData(document.getElementById('auth-form'));
-            const email = formData.get('email');
-            const password = formData.get('password');
-            const confirmPassword = formData.get('confirmPassword');
-            const code = formData.get('code');
-
-            if (!email) return showAuthStatus("Email is required");
-
-            try {
-                if (authMode === 'signin') {
-                    if (!password) return showAuthStatus("Password is required");
-                    const user = await Auth.signIn(email, password);
-                    console.log("Logged in:", user);
-                    await checkAuthState();
-                }
-                else if (authMode === 'signup') {
-                    if (!password) return showAuthStatus("Password is required");
-                    if (password !== confirmPassword) return showAuthStatus("Passwords do not match");
-
-                    await Auth.signUp({
-                        username: email,
-                        password,
-                        attributes: {
-                            email,
-                            'name': 'Test User',
-                            'custom:tier': 'Free'
-                        }
-                    });
-
-                    switchAuthMode('confirm');
-                    showAuthStatus("Verification code sent to email", false);
-                }
-                else if (authMode === 'confirm') {
-                    if (!code) return showAuthStatus("Verification code is required");
-                    await Auth.confirmSignUp(email, code);
-                    switchAuthMode('signin');
-                    showAuthStatus("Account verified! You can now sign in.", false);
-                }
-                else if (authMode === 'forgot_password') {
-                    await Auth.forgotPassword(email);
-                    switchAuthMode('reset_password');
-                    showAuthStatus("Recovery code sent to your email", false);
-                }
-                else if (authMode === 'reset_password') {
-                    if (!code) return showAuthStatus("Verification code is required");
-                    if (!password) return showAuthStatus("New Password is required");
-                    if (password !== confirmPassword) return showAuthStatus("Passwords do not match");
-                    await Auth.forgotPasswordSubmit(email, code, password);
-                    switchAuthMode('signin');
-                    showAuthStatus("Password reset successful! Please sign in.", false);
-                }
-            } catch (error) {
-                console.error("Auth error:", error);
-                showAuthStatus(error.message || "An error occurred");
-            }
-        }
-
-        async function checkAuthState() {
-            try {
-                const user = await Auth.currentAuthenticatedUser();
-                currentUser = user;
-
-                // Show App UI Immediately
-                const showElements = ['dashboard', 'nav-tabs', 'add-item-btn', 'user-display', 'danger-zone'];
-                showElements.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.classList.remove('hidden');
-                });
-
-                // Hide Auth UI Immediately
-                const hideElements = ['auth-section', 'login-btn'];
-                hideElements.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.classList.add('hidden');
-                });
-
-                // Nested try-catch for non-critical data fetching
-                try {
-                    const attributes = await Auth.userAttributes(user);
-                    const tierAttr = attributes.find(a => a.Name === 'custom:tier');
-                    const emailAttr = attributes.find(a => a.Name === 'email');
-                    currentUser.tier = tierAttr ? tierAttr.Value : 'Free';
-
-                    // Configure RevenueCat with Cognito sub
-                    if (typeof Purchases !== 'undefined' && user.attributes && user.attributes.sub) {
-                        Purchases.Purchases.configure(REVENUECAT_PUBLIC_API_KEY, user.attributes.sub);
                         await updateTierFromRevenueCat();
                     }
 
@@ -939,7 +792,6 @@ async function checkAuthState() {
                     }
                 } catch (dataError) {
                     console.error("Non-critical data fetching failed:", dataError);
-                    // Still attempt to set email if available directly from user object
                     const userEmailElem = document.getElementById('user-email');
                     if (userEmailElem && user.attributes && user.attributes.email) {
                         userEmailElem.innerText = user.attributes.email;
@@ -969,6 +821,10 @@ async function checkAuthState() {
                 switchAuthMode('signin');
                 renderVault();
                 updateStats();
+
+                // FORCE ERROR TO SCREEN
+                const errorDetails = e.message || JSON.stringify(e) || String(e);
+                showAuthStatus("Auth Debug: " + errorDetails, true);
             }
         }
 
@@ -980,7 +836,6 @@ async function checkAuthState() {
                 } else {
                     currentUser.tier = 'Free';
                 }
-                // Optionally sync back to Cognito if there's a mismatch
             } catch (e) {
                 console.error("RevenueCat Error:", e);
             }
@@ -1003,7 +858,6 @@ async function checkAuthState() {
                 const proBtn = document.getElementById('paywall-pro-btn');
                 const tier = currentUser.tier || 'Free';
 
-                // Reset states
                 freeBtn.disabled = false;
                 freeBtn.innerText = "Switch to Free";
                 freeBtn.className = "w-full py-3 px-4 rounded-xl font-bold transition-all bg-gray-700 text-white hover:bg-gray-600 uppercase text-[10px] tracking-widest";
@@ -1026,33 +880,17 @@ async function checkAuthState() {
 
         async function handleUpgrade() {
             const isAndroidTWA = window.matchMedia('(display-mode: standalone)').matches && /android/i.test(navigator.userAgent);
-
             try {
                 if (isAndroidTWA && 'getDigitalGoodsService' in window) {
-                    // Google Play Billing via Digital Goods API
                     const service = await window.getDigitalGoodsService('https://play.google.com/billing');
                     const details = await service.getDetails(['pro_subscription']);
-
-                    const paymentMethods = [{
-                        supportedMethods: 'https://play.google.com/billing',
-                        data: { sku: 'pro_subscription' }
-                    }];
-                    const paymentDetails = {
-                        total: {
-                            label: 'Total',
-                            amount: { currency: 'USD', value: '49.99' }
-                        }
-                    };
-
+                    const paymentMethods = [{ supportedMethods: 'https://play.google.com/billing', data: { sku: 'pro_subscription' } }];
+                    const paymentDetails = { total: { label: 'Total', amount: { currency: 'USD', value: '49.99' } } };
                     const request = new PaymentRequest(paymentMethods, paymentDetails);
                     const response = await request.show();
-
-                    // After successful payment, sync with RevenueCat
                     await Purchases.Purchases.syncPurchases();
                     await response.complete('success');
-
                 } else {
-                    // Standard Web: Stripe via RevenueCat
                     const offerings = await Purchases.Purchases.getOfferings();
                     if (offerings.current && offerings.current.availablePackages.length > 0) {
                         const packageToBuy = offerings.current.availablePackages[0];
@@ -1061,7 +899,6 @@ async function checkAuthState() {
                         throw new Error("No products available for purchase.");
                     }
                 }
-
                 await updateTierFromRevenueCat();
                 if (currentUser.tier === 'Pro') {
                     alert("Welcome to Pro! Your sync features are now active.");
@@ -1076,26 +913,17 @@ async function checkAuthState() {
         async function handleAccountDeletion() {
             const btn = document.getElementById('delete-confirm-btn');
             const originalText = btn.innerText;
-
             try {
                 btn.disabled = true;
                 btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> DELETING...`;
-
-                // --- PLACEHOLDER FOR AWS COGNITO & DYNAMODB SCRUBBING ---
-                // Example: await fetch('https://YOUR_API_ID.execute-api.REGION.amazonaws.com/prod/delete-user', { method: 'DELETE', headers: { 'Authorization': token } });
-
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
-
+                await new Promise(resolve => setTimeout(resolve, 2000));
                 alert("Your account and data have been successfully deleted.");
-
-                // Close modals and sign out
                 toggleDeleteAccountModal();
                 toggleSettingsModal();
                 await handleSignOut();
-
             } catch (error) {
                 console.error("Deletion Error:", error);
-                alert("An error occurred during account deletion. Please try again or contact support.");
+                alert("An error occurred during account deletion.");
                 btn.disabled = false;
                 btn.innerText = originalText;
             }
@@ -1117,7 +945,6 @@ async function checkAuthState() {
         if (isEnabled) checkForDueMaintenance();
         if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 
-        // Set default date to today
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('itemDate').value = today;
 
