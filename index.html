@@ -1,12 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script>
-        window.onerror = function(message, source, lineno, colno, error) {
-            alert("FATAL CRASH: " + message + "\nLine: " + lineno);
-            return false;
-        };
-    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MaintenanceVault</title>
@@ -15,8 +9,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-    <!-- AWS Amplify SDK (Loaded via Main Module Script) -->
-    <!-- RevenueCat Web SDK -->
+    <script src="https://unpkg.com/aws-amplify@4.6.6/dist/aws-amplify.min.js"></script>
+    
     <script src="https://unpkg.com/@revenuecat/purchases-js@1.29.0/dist/Purchases.umd.js"></script>
 
     <style>
@@ -141,27 +135,28 @@
             <button type="submit" id="save-entry-btn" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95">Save Entry</button>
         </form>
 
-        <div id="vault-list" class="grid gap-4"></div>
+            <div id="vault-list" class="grid gap-4"></div>
 
-        <div id="dashboard-view" class="hidden animate-fade-in">
-            <div class="grid grid-cols-2 gap-4 mb-6">
-                <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 text-center">
-                    <div class="text-3xl font-bold text-green-400" id="dash-repaired">0</div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wider">Items Repaired</div>
+            <div id="dashboard-view" class="hidden animate-fade-in">
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 text-center">
+                        <div class="text-3xl font-bold text-green-400" id="dash-repaired">0</div>
+                        <div class="text-xs text-gray-500 uppercase tracking-wider">Items Repaired</div>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 text-center">
+                        <div class="text-3xl font-bold text-blue-400" id="dash-replaced">0</div>
+                        <div class="text-xs text-gray-500 uppercase tracking-wider">Items Replaced</div>
+                    </div>
                 </div>
-                <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 text-center">
-                    <div class="text-3xl font-bold text-blue-400" id="dash-replaced">0</div>
-                    <div class="text-xs text-gray-500 uppercase tracking-wider">Items Replaced</div>
-                </div>
-            </div>
 
-            <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
-                <h3 class="font-bold text-white mb-2 flex items-center"><i class="fas fa-recycle text-green-500 mr-2"></i>Impact Calculator</h3>
-                <p class="text-sm text-gray-400 mb-6 leading-relaxed">Based on "Repair vs Replace" logic. Repairing avoids ~88% of new production emissions.</p>
-                <div class="w-full bg-gray-700 rounded-full h-6 mb-2 overflow-hidden">
-                    <div id="impact-bar" class="bg-gradient-to-r from-green-600 to-green-400 h-6 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
+                    <h3 class="font-bold text-white mb-2 flex items-center"><i class="fas fa-recycle text-green-500 mr-2"></i>Impact Calculator</h3>
+                    <p class="text-sm text-gray-400 mb-6 leading-relaxed">Based on "Repair vs Replace" logic. Repairing avoids ~88% of new production emissions.</p>
+                    <div class="w-full bg-gray-700 rounded-full h-6 mb-2 overflow-hidden">
+                        <div id="impact-bar" class="bg-gradient-to-r from-green-600 to-green-400 h-6 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                    </div>
+                    <div class="text-right text-xs text-green-400 font-mono font-bold uppercase tracking-wide" id="impact-percent">0% Circular Economy Score</div>
                 </div>
-                <div class="text-right text-xs text-green-400 font-mono font-bold uppercase tracking-wide" id="impact-percent">0% Circular Economy Score</div>
             </div>
         </div>
 
@@ -185,9 +180,8 @@
                 </div>
 
                 <div class="p-6">
-                    <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
-                        <!-- Dynamic content injected via switchAuthMode() -->
-                    </form>
+                    <form id="auth-form" onsubmit="handleAuthSubmit(event); return false;" class="space-y-4">
+                        </form>
                     <div id="auth-status-msg" class="mt-4 p-3 rounded text-xs text-center hidden"></div>
                 </div>
 
@@ -213,14 +207,11 @@
         <i class="fas fa-plus text-xl"></i>
     </button>
 
-    <!-- Auth Modal -->
-    <!-- Paywall Modal -->
     <div id="paywall-modal" class="hidden fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-gray-800 w-full max-w-5xl rounded-2xl border border-blue-500/30 shadow-2xl overflow-hidden animate-fade-in relative">
             <button onclick="togglePaywall()" class="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors z-10"><i class="fas fa-times text-xl"></i></button>
 
             <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-700">
-                <!-- Free Tier -->
                 <div class="p-8 flex flex-col">
                     <h3 class="text-gray-400 uppercase text-xs font-bold tracking-widest mb-2">Free</h3>
                     <div class="text-4xl font-bold text-white mb-6">$0</div>
@@ -232,7 +223,6 @@
                     <button id="paywall-free-btn" disabled class="w-full py-3 px-4 rounded-xl font-bold transition-all bg-gray-700 text-gray-500 cursor-not-allowed uppercase text-[10px] tracking-widest">Current Plan</button>
                 </div>
 
-                <!-- Pro Tier (Recommended) -->
                 <div class="p-8 flex flex-col bg-blue-900/10 border-x-0 md:border-x border-blue-500/50 relative">
                     <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-tighter shadow-lg">Recommended</div>
                     <h3 class="text-blue-400 uppercase text-xs font-bold tracking-widest mb-2">Pro</h3>
@@ -246,7 +236,6 @@
                     <button id="paywall-pro-btn" onclick="handleUpgrade()" class="w-full py-4 px-4 rounded-xl font-bold transition-all bg-blue-600 hover:bg-blue-500 text-white shadow-lg active:scale-95 uppercase text-[10px] tracking-widest">Upgrade to Pro</button>
                 </div>
 
-                <!-- ProCom Tier -->
                 <div class="p-8 flex flex-col">
                     <h3 class="text-yellow-500 uppercase text-xs font-bold tracking-widest mb-2">ProCom</h3>
                     <div class="text-4xl font-bold text-white mb-1">$15<span class="text-sm font-normal text-gray-500 ml-1">/ seat / mo</span></div>
@@ -266,7 +255,6 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
     <div id="settings-modal" class="hidden fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-blue-950 w-full max-w-md rounded-2xl border border-gray-700 shadow-2xl overflow-hidden animate-fade-in">
             <div class="p-6 border-b border-gray-700 flex justify-between items-center bg-gradient-to-r from-blue-900/20 to-transparent">
@@ -309,7 +297,6 @@
         </div>
     </div>
 
-    <!-- Delete Item Confirmation Modal -->
     <div id="delete-item-modal" class="hidden fixed inset-0 z-[70] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-blue-950 w-full max-w-sm rounded-2xl border border-gray-700 shadow-2xl overflow-hidden animate-fade-in">
             <div class="p-6 text-center">
@@ -327,7 +314,6 @@
         </div>
     </div>
 
-    <!-- Delete Account Confirmation Modal -->
     <div id="delete-account-modal" class="hidden fixed inset-0 z-[70] bg-black/90 flex items-center justify-center p-4 backdrop-blur-md">
         <div class="bg-gray-900 w-full max-w-md rounded-2xl border border-red-900 shadow-2xl overflow-hidden animate-fade-in">
             <div class="p-6 border-b border-red-900/50 bg-red-950/20">
@@ -359,10 +345,11 @@
         </div>
     </div>
 
+    <script>
+        // 1. Grab AWS tools directly from the pre-loaded script in the <head>
+        const { Amplify, Auth } = window.aws_amplify;
 
-    <script type="module">
-      import { Amplify, Auth } from 'https://esm.sh/aws-amplify@4.6.6';
-
+        // 2. Configure Amplify
         Amplify.configure({
             Auth: {
                 region: 'us-east-1',
@@ -372,46 +359,13 @@
             }
         });
 
-        window.Auth = Auth;
-
         const REVENUECAT_PUBLIC_API_KEY = 'YOUR_REVENUECAT_PUBLIC_API_KEY';
 
         let vaultData = JSON.parse(localStorage.getItem('sustainVault')) || [];
         let currentTab = 'vehicle';
         let currentUser = null;
-        let authMode = 'signin'; // 'signin', 'signup', 'confirm'
+        let authMode = 'signin';
         let itemToDelete = null;
-
-
-        // Expose functions to window for HTML event handlers
-        window.addItem = addItem;
-        window.syncToAWS = syncToAWS;
-        window.renderVault = renderVault;
-        window.deleteItem = deleteItem;
-        window.toggleDeleteItemModal = toggleDeleteItemModal;
-        window.confirmDeleteItem = confirmDeleteItem;
-        window.updateStats = updateStats;
-        window.toggleNotifications = toggleNotifications;
-        window.checkForDueMaintenance = checkForDueMaintenance;
-        window.sendLocalNotification = sendLocalNotification;
-        window.switchTab = switchTab;
-        window.toggleForm = toggleForm;
-        window.toggleSettingsModal = toggleSettingsModal;
-        window.toggleDeleteAccountModal = toggleDeleteAccountModal;
-        window.exportToCSV = exportToCSV;
-        window.togglePasswordVisibility = togglePasswordVisibility;
-        window.clearAuthStatus = clearAuthStatus;
-        window.showAuthStatus = showAuthStatus;
-        window.switchAuthMode = switchAuthMode;
-        window.handleAuthSubmit = handleAuthSubmit;
-        window.checkAuthState = checkAuthState;
-        window.updateTierFromRevenueCat = updateTierFromRevenueCat;
-        window.joinProComWaitlist = joinProComWaitlist;
-        window.togglePaywall = togglePaywall;
-        window.handleUpgrade = handleUpgrade;
-        window.handleAccountDeletion = handleAccountDeletion;
-        window.handleSignOut = handleSignOut;
-
 
         function addItem(event) {
             if (event) event.preventDefault();
@@ -423,7 +377,6 @@
             if(!name) return alert("Service Performed is required");
             if(!date) return alert("Date is required");
 
-            // Freemium Phase 1: 5-asset limit for Free tier
             const isPro = currentUser && currentUser.tier === 'Pro';
             if (!isPro && vaultData.length >= 5) {
                 togglePaywall();
@@ -445,7 +398,6 @@
             vaultData.unshift(newItem);
             localStorage.setItem('sustainVault', JSON.stringify(vaultData));
 
-            // On dashboard, we don't want to hide the form
             if(currentTab !== 'dashboard') toggleForm();
 
             renderVault();
@@ -469,12 +421,10 @@
             try {
                 const session = await Auth.currentSession();
                 const token = session.getAccessToken().getJwtToken();
-                // Replace with your actual API Gateway endpoint
                 const apiEndpoint = 'https://YOUR_API_ID.execute-api.REGION.amazonaws.com/prod/sync';
 
                 console.log("Syncing to AWS...");
 
-                // 1. Push local changes to cloud
                 const pushResponse = await fetch(apiEndpoint, {
                     method: 'POST',
                     headers: { 'Authorization': token, 'Content-Type': 'application/json' },
@@ -483,29 +433,24 @@
 
                 if (!pushResponse.ok) throw new Error("Cloud push failed");
 
-                // 2. Fetch latest state from cloud to merge back
                 const pullResponse = await fetch(apiEndpoint, {
                     method: 'GET',
                     headers: { 'Authorization': token }
                 });
                 const cloudData = await pullResponse.json();
 
-                // 3. Last-Write-Wins Merge Logic
                 let merged = [...vaultData];
                 cloudData.forEach(cloudItem => {
                     const localIndex = merged.findIndex(i => i.itemId === cloudItem.itemId);
                     if (localIndex > -1) {
-                        // Only replace if cloud version is strictly newer
                         if (new Date(cloudItem.updatedAt) > new Date(merged[localIndex].updatedAt)) {
                             merged[localIndex] = cloudItem;
                         }
                     } else {
-                        // Item exists in cloud but not locally
                         merged.push(cloudItem);
                     }
                 });
 
-                // 4. Update local state
                 vaultData = merged.sort((a,b) => new Date(b.date) - new Date(a.date));
                 localStorage.setItem('sustainVault', JSON.stringify(vaultData));
                 renderVault();
@@ -541,7 +486,6 @@
                 const badgeColor = isRepair ? 'bg-green-900 text-green-300 border-green-800' : 'bg-blue-900 text-blue-300 border-blue-800';
                 const icon = item.category === 'Vehicle' ? 'fa-car' : 'fa-tools';
 
-                // Format date manually to avoid timezone issues
                 let displayDate = 'N/A';
                 if (item.date) {
                     const dateParts = item.date.split('-');
@@ -658,7 +602,6 @@
             });
             document.getElementById(`tab-${tab}`).classList.add('tab-active', 'text-blue-400');
 
-            // Show list and form on dashboard, otherwise standard behavior
             if (tab === 'dashboard') {
                 document.getElementById('vault-list').classList.remove('hidden');
                 document.getElementById('dashboard-view').classList.remove('hidden');
@@ -726,7 +669,6 @@
             document.body.removeChild(link);
         }
 
-        // --- AUTH LOGIC ---
         function togglePasswordVisibility(inputId, iconId) {
             const input = document.getElementById(inputId);
             const icon = document.getElementById(iconId);
@@ -741,7 +683,6 @@
             }
         }
 
-
         function clearAuthStatus() {
             const statusMsg = document.getElementById('auth-status-msg');
             statusMsg.classList.add('hidden');
@@ -754,7 +695,146 @@
             statusMsg.classList.remove('hidden', 'bg-red-900/50', 'text-red-400', 'bg-green-900/50', 'text-green-400');
             statusMsg.classList.add(isError ? 'bg-red-900/50' : 'bg-green-900/50', isError ? 'text-red-400' : 'text-green-400');
         }
-async function checkAuthState() {
+
+        function switchAuthMode(mode) {
+            authMode = mode;
+            const authForm = document.getElementById('auth-form');
+            const authTabs = document.getElementById('auth-tabs');
+            const verifyHeader = document.getElementById('verify-header');
+            const recoveryHeader = document.getElementById('recovery-header');
+            const tabSignin = document.getElementById('auth-tab-signin');
+            const tabSignup = document.getElementById('auth-tab-signup');
+
+            clearAuthStatus();
+
+            authTabs.classList.remove('hidden');
+            verifyHeader.classList.add('hidden');
+            recoveryHeader.classList.add('hidden');
+            tabSignin.className = "flex-1 py-4 text-xs font-bold uppercase tracking-widest transition-all";
+            tabSignup.className = "flex-1 py-4 text-xs font-bold uppercase tracking-widest transition-all";
+
+            let formHTML = '';
+
+            const emailField = (email = '', readonly = false) => `
+                <div>
+                    <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Email Address</label>
+                    <input type="email" name="email" id="auth-email" value="${email}" ${readonly ? 'readonly' : ''} autocomplete="username" required placeholder="name@email.com" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-600 outline-none transition-all">
+                </div>`;
+
+            const passwordField = (label = 'Password', id = 'auth-password', autocomplete = 'current-password') => `
+                <div>
+                    <div class="flex justify-between items-center mb-1 ml-1">
+                        <label class="block text-[10px] text-gray-500 uppercase font-bold">${label}</label>
+                        ${mode === 'signin' ? '<button type="button" onclick="switchAuthMode(\'forgot_password\')" class="text-[10px] text-blue-500 hover:text-blue-400 font-bold uppercase">Forgot Password?</button>' : ''}
+                    </div>
+                    <div class="relative">
+                        <input type="password" name="${id === 'auth-password' ? 'password' : 'confirmPassword'}" id="${id}" autocomplete="${autocomplete}" required placeholder="••••••••" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-600 outline-none transition-all pr-10">
+                        <button type="button" onclick="togglePasswordVisibility('${id}', '${id}-toggle-icon')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-300">
+                            <i id="${id}-toggle-icon" class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>`;
+
+            const codeField = `
+                <div>
+                    <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Verification Code</label>
+                    <input type="text" name="code" id="auth-code" autocomplete="one-time-code" required placeholder="123456" class="w-full bg-gray-900 border border-gray-600 rounded-lg p-3 text-white focus:border-yellow-600 outline-none transition-all">
+                </div>`;
+
+            const submitButton = (text) => `
+                <button type="submit" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <span>${text}</span>
+                    <i class="fas fa-chevron-right text-xs"></i>
+                </button>`;
+
+            let currentEmail = document.getElementById('auth-email')?.value || '';
+            currentEmail = currentEmail.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+            if (mode === 'signin') {
+                tabSignin.classList.add('text-yellow-500', 'border-b-2', 'border-yellow-500');
+                tabSignup.classList.add('text-gray-500', 'hover:text-gray-300');
+                formHTML = emailField(currentEmail) + passwordField() + submitButton('SIGN IN');
+            } else if (mode === 'signup') {
+                tabSignup.classList.add('text-yellow-500', 'border-b-2', 'border-yellow-500');
+                tabSignin.classList.add('text-gray-500', 'hover:text-gray-300');
+                formHTML = emailField(currentEmail) + passwordField('Password', 'auth-password', 'new-password') + passwordField('Confirm Password', 'auth-confirm-password', 'new-password') + submitButton('CREATE ACCOUNT');
+            } else if (mode === 'confirm') {
+                authTabs.classList.add('hidden');
+                verifyHeader.classList.remove('hidden');
+                formHTML = emailField(currentEmail, true) + codeField + submitButton('VERIFY CODE');
+            } else if (mode === 'forgot_password') {
+                authTabs.classList.add('hidden');
+                recoveryHeader.classList.remove('hidden');
+                formHTML = emailField(currentEmail) + submitButton('SEND RECOVERY CODE');
+            } else if (mode === 'reset_password') {
+                authTabs.classList.add('hidden');
+                recoveryHeader.classList.remove('hidden');
+                formHTML = emailField(currentEmail, true) + codeField + passwordField('New Password', 'auth-password', 'new-password') + passwordField('Confirm New Password', 'auth-confirm-password', 'new-password') + submitButton('RESET PASSWORD');
+            }
+
+            authForm.innerHTML = formHTML;
+        }
+
+        async function handleAuthSubmit(event) {
+            if (event) event.preventDefault();
+            const formData = new FormData(document.getElementById('auth-form'));
+            const email = formData.get('email');
+            const password = formData.get('password');
+            const confirmPassword = formData.get('confirmPassword');
+            const code = formData.get('code');
+
+            if (!email) return showAuthStatus("Email is required");
+
+            try {
+                if (authMode === 'signin') {
+                    if (!password) return showAuthStatus("Password is required");
+                    const user = await Auth.signIn(email, password);
+                    console.log("Logged in:", user);
+                    await checkAuthState();
+                }
+                else if (authMode === 'signup') {
+                    if (!password) return showAuthStatus("Password is required");
+                    if (password !== confirmPassword) return showAuthStatus("Passwords do not match");
+
+                    await Auth.signUp({
+                        username: email,
+                        password,
+                        attributes: {
+                            email,
+                            'name': 'Test User',
+                            'custom:tier': 'Free'
+                        }
+                    });
+
+                    switchAuthMode('confirm');
+                    showAuthStatus("Verification code sent to email", false);
+                }
+                else if (authMode === 'confirm') {
+                    if (!code) return showAuthStatus("Verification code is required");
+                    await Auth.confirmSignUp(email, code);
+                    switchAuthMode('signin');
+                    showAuthStatus("Account verified! You can now sign in.", false);
+                }
+                else if (authMode === 'forgot_password') {
+                    await Auth.forgotPassword(email);
+                    switchAuthMode('reset_password');
+                    showAuthStatus("Recovery code sent to your email", false);
+                }
+                else if (authMode === 'reset_password') {
+                    if (!code) return showAuthStatus("Verification code is required");
+                    if (!password) return showAuthStatus("New Password is required");
+                    if (password !== confirmPassword) return showAuthStatus("Passwords do not match");
+                    await Auth.forgotPasswordSubmit(email, code, password);
+                    switchAuthMode('signin');
+                    showAuthStatus("Password reset successful! Please sign in.", false);
+                }
+            } catch (error) {
+                console.error("Auth error:", error);
+                showAuthStatus(error.message || "An error occurred");
+            }
+        }
+
+        async function checkAuthState() {
             try {
                 const user = await Auth.currentAuthenticatedUser();
                 currentUser = user;
@@ -780,7 +860,6 @@ async function checkAuthState() {
                     const emailAttr = attributes.find(a => a.Name === 'email');
                     currentUser.tier = tierAttr ? tierAttr.Value : 'Free';
 
-                    // Configure RevenueCat with Cognito sub
                     if (typeof Purchases !== 'undefined' && user.attributes && user.attributes.sub) {
                         Purchases.Purchases.configure(REVENUECAT_PUBLIC_API_KEY, user.attributes.sub);
                         await updateTierFromRevenueCat();
@@ -821,10 +900,6 @@ async function checkAuthState() {
                 switchAuthMode('signin');
                 renderVault();
                 updateStats();
-
-                // FORCE ERROR TO SCREEN
-                const errorDetails = e.message || JSON.stringify(e) || String(e);
-                showAuthStatus("Auth Debug: " + errorDetails, true);
             }
         }
 
@@ -938,8 +1013,9 @@ async function checkAuthState() {
             }
         }
 
-        // Initialize App Timing Fixes
-        await checkAuthState();
+        // Initialize App
+        checkAuthState(); // Notice: No 'await' anymore!
+        
         const isEnabled = localStorage.getItem('notificationsEnabled') === 'true';
         document.getElementById('notify-toggle').checked = isEnabled;
         if (isEnabled) checkForDueMaintenance();
