@@ -41,10 +41,12 @@
             </div>
             
             <div class="flex flex-col items-end">
-                <div id="user-display" class="hidden text-[10px] text-blue-400 font-bold mb-1 flex items-center gap-2">
+                <div id="user-display" class="hidden text-[10px] text-blue-400 font-bold mb-1 flex items-center gap-3">
                     <i id="sync-indicator" class="fas fa-cloud text-gray-600 hidden" title="Cloud Sync Active"></i>
                     <span id="user-email"></span>
-                    <button id="sign-out-btn" onclick="handleSignOut()" class="text-gray-500 hover:text-white"><i class="fas fa-sign-out-alt"></i></button>
+                    <button id="sign-out-btn" onclick="handleSignOut()" class="bg-red-900/30 text-red-400 hover:bg-red-600 hover:text-white px-2 py-1 rounded transition-colors flex items-center gap-1 border border-red-900/50">
+                        <i class="fas fa-sign-out-alt"></i> LOGOUT
+                    </button>
                 </div>
                 <button id="login-btn" onclick="switchAuthMode('signin')" class="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded mb-1 transition-all">SIGN IN / JOIN</button>
 
@@ -57,14 +59,17 @@
             </div>
         </div>
         
-        <div id="nav-tabs" class="hidden flex max-w-4xl mx-auto px-4 mt-2 gap-6 text-sm font-semibold text-gray-500">
+        <div id="nav-tabs" class="hidden flex max-w-4xl mx-auto px-4 mt-2 gap-4 text-sm font-semibold text-gray-500 overflow-x-auto whitespace-nowrap">
             <button onclick="switchTab('vehicle')" id="tab-vehicle" class="pb-2 tab-active transition-colors">
                 <i class="fas fa-truck-pickup mr-1"></i> VEHICLE
             </button>
             <button onclick="switchTab('property')" id="tab-property" class="pb-2 hover:text-gray-300 transition-colors">
                 <i class="fas fa-home mr-1"></i> PROPERTY
             </button>
-            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="pb-2 hover:text-gray-300 transition-colors">
+            <button onclick="switchTab('equipment')" id="tab-equipment" class="pb-2 hover:text-gray-300 transition-colors">
+                <i class="fas fa-toolbox mr-1"></i> EQUIPMENT
+            </button>
+            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="pb-2 hover:text-gray-300 transition-colors ml-auto">
                 <i class="fas fa-chart-pie mr-1"></i> IMPACT
             </button>
         </div>
@@ -471,7 +476,8 @@
             const filtered = vaultData.filter(item => {
                 if(currentTab === 'dashboard') return true;
                 if(currentTab === 'vehicle') return item.category === 'Vehicle';
-                if(currentTab === 'property') return item.category !== 'Vehicle';
+                if(currentTab === 'property') return item.category === 'Property';
+                if(currentTab === 'equipment') return item.category === 'Equipment';
                 return false;
             });
 
@@ -595,7 +601,7 @@
 
         function switchTab(tab) {
             currentTab = tab;
-            document.querySelectorAll('header button').forEach(b => {
+            document.querySelectorAll('#nav-tabs button').forEach(b => {
                 b.classList.remove('tab-active', 'text-blue-400');
                 b.classList.add('hover:text-gray-300');
             });
@@ -618,7 +624,9 @@
             const form = document.getElementById('input-form');
             form.classList.toggle('hidden');
             if(!form.classList.contains('hidden')) {
-                document.getElementById('itemCategory').value = currentTab === 'vehicle' ? 'Vehicle' : 'Property';
+                if (currentTab === 'vehicle') document.getElementById('itemCategory').value = 'Vehicle';
+                else if (currentTab === 'property') document.getElementById('itemCategory').value = 'Property';
+                else if (currentTab === 'equipment') document.getElementById('itemCategory').value = 'Equipment';
             }
         }
 
