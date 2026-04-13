@@ -906,11 +906,10 @@
                                     userEmailElem.innerText = emailAttr ? emailAttr.getValue() : cognitoUser.getUsername();
                                 }
 
-                                // FIX: Talk directly to global RevenueCat singleton without saving to a variable.
+                                // FIX: Talk directly to global RevenueCat singleton and attach it to window per Claude's instruction
                                 if (typeof Purchases !== 'undefined') {
                                     const appUserId = (subAttr ? subAttr.getValue() : null) || cognitoUser.getUsername();
-                                    const rcCore = Purchases.Purchases || Purchases;
-                                    rcCore.configure(REVENUECAT_PUBLIC_API_KEY, appUserId);
+                                    window.rcInstance = (Purchases.Purchases || Purchases).configure(REVENUECAT_PUBLIC_API_KEY, appUserId);
                                     updateTierFromRevenueCat();
                                 }
                             }
@@ -949,9 +948,8 @@
 
         async function updateTierFromRevenueCat() {
             try {
-                if (typeof Purchases === 'undefined') return;
-                const rcCore = Purchases.Purchases || Purchases;
-                const customerInfo = await rcCore.getCustomerInfo();
+                if (!window.rcInstance) return;
+                const customerInfo = await window.rcInstance.getCustomerInfo();
                 if (customerInfo.entitlements.active['Premium']) {
                     currentUser.tier = 'Pro';
                 } else {
@@ -1001,14 +999,13 @@
 
         async function handleUpgrade() {
             try {
-                if (typeof Purchases === 'undefined') throw new Error("Billing system not loaded. Please refresh the page.");
+                if (!window.rcInstance) throw new Error("Billing not initialized. Please sign out and back in, or refresh the page.");
                 
-                const rcCore = Purchases.Purchases || Purchases;
-                const offerings = await rcCore.getOfferings();
+                const offerings = await window.rcInstance.getOfferings();
                 
                 if (offerings.current && offerings.current.availablePackages.length > 0) {
                     const packageToBuy = offerings.current.availablePackages[0];
-                    await rcCore.purchasePackage(packageToBuy);
+                    await window.rcInstance.purchasePackage(packageToBuy);
                 } else {
                     throw new Error("No products available for purchase.");
                 }
