@@ -902,14 +902,28 @@
                                 
                                 currentUser.tier = tierAttr ? tierAttr.getValue() : 'Free';
 
-                                if (typeof Purchases !== 'undefined' && subAttr) {
-                                    rcInstance = Purchases.Purchases.configure(REVENUECAT_PUBLIC_API_KEY, subAttr.getValue());
-                                    updateTierFromRevenueCat();
-                                }
-
                                 const userEmailElem = document.getElementById('user-email');
                                 if (userEmailElem) {
                                     userEmailElem.innerText = emailAttr ? emailAttr.getValue() : cognitoUser.getUsername();
+                                }
+
+                                // FIX: Bulletproof RevenueCat Setup. 
+                                // Bypasses missing Cognito "sub" IDs so billing always starts.
+                                if (typeof Purchases !== 'undefined') {
+                                    const appUserId = (subAttr ? subAttr.getValue() : null) || cognitoUser.getUsername();
+                                    const rcCore = Purchases.Purchases || Purchases;
+                                    
+                                    try {
+                                        rcInstance = rcCore.configure(REVENUECAT_PUBLIC_API_KEY, appUserId);
+                                    } catch (e) {
+                                        try {
+                                            rcInstance = rcCore.configure({ apiKey: REVENUECAT_PUBLIC_API_KEY, appUserId: appUserId });
+                                        } catch (e2) {
+                                            console.error("RC Init Error:", e2);
+                                        }
+                                    }
+                                    
+                                    updateTierFromRevenueCat();
                                 }
                             }
                         });
