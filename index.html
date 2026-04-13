@@ -366,6 +366,7 @@
         let currentUser = null;
         let authMode = 'signin';
         let itemToDelete = null;
+        let rcInstance = null; // Store the RevenueCat Instance
 
         function addItem(event) {
             if (event) event.preventDefault();
@@ -902,7 +903,7 @@
                                 currentUser.tier = tierAttr ? tierAttr.getValue() : 'Free';
 
                                 if (typeof Purchases !== 'undefined' && subAttr) {
-                                    Purchases.Purchases.configure(REVENUECAT_PUBLIC_API_KEY, subAttr.getValue());
+                                    rcInstance = Purchases.Purchases.configure(REVENUECAT_PUBLIC_API_KEY, subAttr.getValue());
                                     updateTierFromRevenueCat();
                                 }
 
@@ -946,7 +947,8 @@
 
         async function updateTierFromRevenueCat() {
             try {
-                const customerInfo = await Purchases.Purchases.getCustomerInfo();
+                if (!rcInstance) return;
+                const customerInfo = await rcInstance.getCustomerInfo();
                 if (customerInfo.entitlements.active['Premium']) {
                     currentUser.tier = 'Pro';
                 } else {
@@ -995,26 +997,19 @@
         }
 
         async function handleUpgrade() {
-            const isAndroidTWA = window.matchMedia('(display-mode: standalone)').matches && /android/i.test(navigator.userAgent);
             try {
-                if (isAndroidTWA && 'getDigitalGoodsService' in window) {
-                    const service = await window.getDigitalGoodsService('https://play.google.com/billing');
-                    const details = await service.getDetails(['pro_subscription']);
-                    const paymentMethods = [{ supportedMethods: 'https://play.google.com/billing', data: { sku: 'pro_subscription' } }];
-                    const paymentDetails = { total: { label: 'Total', amount: { currency: 'USD', value: '49.99' } } };
-                    const request = new PaymentRequest(paymentMethods, paymentDetails);
-                    const response = await request.show();
-                    await Purchases.Purchases.syncPurchases();
-                    await response.complete('success');
+                if (!rcInstance) throw new Error("Billing system not initialized. Please refresh the page and try again.");
+                
+                // Force all upgrades through RevenueCat Web Billing
+                const offerings = await rcInstance.getOfferings();
+                
+                if (offerings.current && offerings.current.availablePackages.length > 0) {
+                    const packageToBuy = offerings.current.availablePackages[0];
+                    await rcInstance.purchasePackage(packageToBuy);
                 } else {
-                    const offerings = await Purchases.Purchases.getOfferings();
-                    if (offerings.current && offerings.current.availablePackages.length > 0) {
-                        const packageToBuy = offerings.current.availablePackages[0];
-                        await Purchases.Purchases.purchasePackage(packageToBuy);
-                    } else {
-                        throw new Error("No products available for purchase.");
-                    }
+                    throw new Error("No products available for purchase.");
                 }
+                
                 await updateTierFromRevenueCat();
                 if (currentUser.tier === 'Pro') {
                     alert("Welcome to Pro! Your sync features are now active.");
