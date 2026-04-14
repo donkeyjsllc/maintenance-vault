@@ -893,25 +893,35 @@
                             if (el) el.classList.add('hidden');
                         });
 
+                        // Initialize RevenueCat IMMEDIATELY (Out of the flaky AWS callback)
+                        if (typeof Purchases !== 'undefined') {
+                            try {
+                                const rcClass = Purchases.Purchases || Purchases;
+                                window.rcInstance = rcClass.configure({
+                                    apiKey: REVENUECAT_PUBLIC_API_KEY,
+                                    appUserId: cognitoUser.getUsername()
+                                });
+                                updateTierFromRevenueCat();
+                            } catch (rcError) {
+                                console.error("RevenueCat Init Error:", rcError);
+                            }
+                        }
+
+                        // Fetch UI data (Email, Tier)
                         cognitoUser.getUserAttributes((err, attributes) => {
                             if (!err && attributes) {
                                 const tierAttr = attributes.find(a => a.getName() === 'custom:tier');
                                 const emailAttr = attributes.find(a => a.getName() === 'email');
-                                const subAttr = attributes.find(a => a.getName() === 'sub');
                                 
-                                currentUser.tier = tierAttr ? tierAttr.getValue() : 'Free';
+                                if (!currentUser.tier || currentUser.tier === 'Free') {
+                                    currentUser.tier = tierAttr ? tierAttr.getValue() : 'Free';
+                                }
 
                                 const userEmailElem = document.getElementById('user-email');
                                 if (userEmailElem) {
                                     userEmailElem.innerText = emailAttr ? emailAttr.getValue() : cognitoUser.getUsername();
                                 }
-
-                                // FIX: Talk directly to global RevenueCat singleton and attach it to window per Claude's instruction
-                                if (typeof Purchases !== 'undefined') {
-                                    const appUserId = (subAttr ? subAttr.getValue() : null) || cognitoUser.getUsername();
-                                    window.rcInstance = (Purchases.Purchases || Purchases).configure(REVENUECAT_PUBLIC_API_KEY, appUserId);
-                                    updateTierFromRevenueCat();
-                                }
+                                renderVault(); // re-render once AWS tier loads
                             }
                         });
 
@@ -948,13 +958,24 @@
 
         async function updateTierFromRevenueCat() {
             try {
-                if (!window.rcInstance) return;
-                const customerInfo = await window.rcInstance.getCustomerInfo();
+                let rc = window.rcInstance;
+                
+                // Fallback kickstart
+                if (!rc && typeof Purchases !== 'undefined' && currentUser) {
+                    const rcClass = Purchases.Purchases || Purchases;
+                    rc = rcClass.configure({ apiKey: REVENUECAT_PUBLIC_API_KEY, appUserId: currentUser.getUsername() });
+                    window.rcInstance = rc;
+                }
+
+                if (!rc) return;
+
+                const customerInfo = await rc.getCustomerInfo();
                 if (customerInfo.entitlements.active['Premium']) {
                     currentUser.tier = 'Pro';
                 } else {
                     currentUser.tier = 'Free';
                 }
+                renderVault();
             } catch (e) {
                 console.error("RevenueCat Error:", e);
             }
@@ -999,13 +1020,22 @@
 
         async function handleUpgrade() {
             try {
-                if (!window.rcInstance) throw new Error("Billing not initialized. Please sign out and back in, or refresh the page.");
+                let rc = window.rcInstance;
                 
-                const offerings = await window.rcInstance.getOfferings();
+                // Bulletproof Fallback: If it's missing when you click the button, boot it up right now.
+                if (!rc && typeof Purchases !== 'undefined' && currentUser) {
+                    const rcClass = Purchases.Purchases || Purchases;
+                    rc = rcClass.configure({ apiKey: REVENUECAT_PUBLIC_API_KEY, appUserId: currentUser.getUsername() });
+                    window.rcInstance = rc;
+                }
+
+                if (!rc) throw new Error("Billing not initialized. Please refresh the page and try again.");
+                
+                const offerings = await rc.getOfferings();
                 
                 if (offerings.current && offerings.current.availablePackages.length > 0) {
                     const packageToBuy = offerings.current.availablePackages[0];
-                    await window.rcInstance.purchasePackage(packageToBuy);
+                    await rc.purchase({ rcPackage: packageToBuy });
                 } else {
                     throw new Error("No products available for purchase.");
                 }
